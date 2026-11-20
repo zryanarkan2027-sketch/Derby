@@ -279,11 +279,10 @@ className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2.5 t
             <p className="text-slatey-400 text-sm">دەرهێنانی یارییەکان...</p>
           </div>
         ) : filtered.length === 0 ? (
-
-
-هیچ یارییەک نەدۆزرایەوە
-
-) : (
+          <div className="glass-card p-12 text-center">
+            <p className="text-slatey-400">هیچ یارییەک نەدۆزرایەوە</p>
+          </div>
+        ) : (
 
 {filtered.map((match) => {
 const data = streamDataMap[match.id];
