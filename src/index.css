@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-bg-900 text-slate-200 font-sans antialiased;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  /* Custom scrollbar - thin dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-bg-800;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slatey-600 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slatey-500;
+  }
+
+  /* Hide scrollbar for league filter pills */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-bg-700/80 backdrop-blur-sm border border-white/5 rounded-xl;
+  }
+
+  .accent-glow {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+  }
+
+  .live-glow {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+  }
+}
