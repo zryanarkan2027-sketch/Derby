@@ -37,7 +37,7 @@ function extractYouTubeId(input: string): string | null {
   const idMatch = candidate.match(
     /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([a-zA-Z0-9_-]{11})/
   );
-  return idMatch ? idMatch[1] : null;
+  return idMatch ? idMatch : null;
 }
 
 export function convertToEmbedUrl(input: string): string {
@@ -51,7 +51,7 @@ export function convertToEmbedUrl(input: string): string {
 
   const srcMatch = trimmed.match(/src=["']?([^"'\s>]+)/);
   if (srcMatch) {
-    const url = srcMatch[1].replace(/['"`<>]/g, '').trim();
+    const url = srcMatch.replace(/['"`<>]/g, '').trim();
     if (url) return url;
   }
 
@@ -113,7 +113,7 @@ export async function getStreamData(matchId: string): Promise<StreamData | undef
   );
   const rows: StreamRow[] = await resp.json();
   if (rows.length === 0) return undefined;
-  return cleanRow(rows[0]);
+  return cleanRow(rows);
 }
 
 export interface StreamUpdate {
@@ -157,16 +157,12 @@ export async function setStreamData(
 }
 
 export async function incrementClickCount(matchId: string): Promise<void> {
-  // Use PostgREST RPC-style increment via PATCH with a computed value.
-  // PostgREST doesn't support atomic increment directly, so we read-then-write.
-  // This is acceptable for click tracking — occasional race conditions just mean
-  // a click might not be counted in edge cases.
   try {
     const resp = await supabaseFetch(
       `/match_streams?match_id=eq.${encodeURIComponent(matchId)}&select=click_count`
     );
     const rows: StreamRow[] = await resp.json();
-    const current = rows.length > 0 ? (rows[0].click_count || 0) : 0;
+    const current = rows.length > 0 ? (rows.click_count || 0) : 0;
 
     await supabaseFetch(
       `/match_streams?match_id=eq.${encodeURIComponent(matchId)}`,
@@ -178,5 +174,40 @@ export async function incrementClickCount(matchId: string): Promise<void> {
     );
   } catch (err) {
     console.error('Failed to increment click count:', err);
+  }
+}
+
+export async function recordSiteVisit(): Promise<void> {
+  try {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('derby_visited')) {
+      return;
+    }
+    const resp = await supabaseFetch(
+      '/match_streams?match_id=eq.__SITE_STATS__&select=click_count'
+    );
+    const rows: StreamRow[] = await resp.json();
+    const current = rows.length > 0 ? (rows.click_count || 0) : 0;
+
+    await supabaseFetch('/match_streams', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify({
+        match_id: '__SITE_STATS__',
+        stream_url: '',
+        affiliate_url: '',
+        platform_name: 'SITE_VISITS',
+        click_count: current + 1,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('derby_visited', 'true');
+    }
+  } catch (err) {
+    console.error('Failed to record visit:', err);
   }
 }
