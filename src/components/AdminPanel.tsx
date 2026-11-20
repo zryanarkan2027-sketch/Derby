@@ -83,7 +83,6 @@ export default function AdminPanel() {
         affiliate_url: editState.affiliateUrl,
         platform_name: editState.platformName,
       });
-      // Update local state with the saved values
       setStreamDataMap((prev) => ({
         ...prev,
         [matchId]: {
@@ -231,6 +230,24 @@ export default function AdminPanel() {
           لینکی YouTube Embed و پلاتفۆرمی فەرمی (Affiliate) بۆ هەر یارییەک دابنێ
         </p>
 
+        {/* Visitor & Clicks Analytics Summary */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <div className="glass-card p-4 border border-accent-500/20 text-center">
+            <p className="text-xs text-slatey-400 mb-1">کۆی گشتی سەردانکەرانی وێبسایت</p>
+            <p className="text-2xl font-bold text-accent-400">
+              {streamDataMap['__SITE_STATS__']?.click_count || 0}
+            </p>
+          </div>
+          <div className="glass-card p-4 border border-white/10 text-center">
+            <p className="text-xs text-slatey-400 mb-1">کۆی گشتی کلیک لە لینکەکان</p>
+            <p className="text-2xl font-bold text-white">
+              {Object.entries(streamDataMap)
+                .filter(([key]) => key !== '__SITE_STATS__')
+                .reduce((sum, [, val]) => sum + (val.click_count || 0), 0)}
+            </p>
+          </div>
+        </div>
+
         {(loadError || saveError) && (
           <div className="mb-4 flex items-start gap-2 text-xs text-live-400 bg-live-500/10 rounded-lg px-3 py-3">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -254,168 +271,130 @@ export default function AdminPanel() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="گەڕان بۆ یاری..."
-            className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2.5 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-          />
-        </div>
+className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2.5 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
+/>
+{loading ? (
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
-            <p className="text-slatey-400 text-sm">دەرهێنانی یارییەکان...</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="glass-card p-12 text-center">
-            <p className="text-slatey-400">هیچ یارییەک نەدۆزرایەوە</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filtered.map((match) => {
-              const data = streamDataMap[match.id];
-              const hasYouTube = !!data?.stream_url && data.stream_url.length > 0;
-              const hasAffiliate = !!data?.affiliate_url && data.affiliate_url.length > 0;
-              const hasAny = hasYouTube || hasAffiliate;
-              const clickCount = data?.click_count || 0;
-              const isEditing = editingId === match.id;
-              const justSaved = savedId === match.id;
 
-              return (
-                <div key={match.id} className="glass-card p-4">
-                  {/* Match info row */}
-                  <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {matchStatusBadge(match.status)}
-                      <span className="text-xs text-slatey-400 shrink-0">{match.leagueName}</span>
-                      <span className="text-sm text-white truncate">
-                        {match.homeTeam.name} <span className="text-slatey-500">vs</span> {match.awayTeam.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Click count badge */}
-                      <span className="flex items-center gap-1 text-[10px] text-slatey-400 bg-bg-600/50 rounded-full px-2 py-0.5">
-                        <MousePointerClick className="w-3 h-3" />
-                        کلیكەکان: {clickCount}
-                      </span>
-                      {hasAny && !isEditing && (
-                        <span className="flex items-center gap-1 text-[10px] text-accent-400">
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          لینک دانراوە
-                        </span>
-                      )}
-                    </div>
-                  </div>
+دەرهێنانی یارییەکان...
 
-                  {/* Stream editor */}
-                  {isEditing ? (
-                    <div className="space-y-3">
-                      {/* YouTube embed field */}
-                      <div>
-                        <label className="flex items-center gap-1.5 text-xs text-slatey-400 mb-1.5">
-                          <Youtube className="w-3.5 h-3.5 text-live-400" />
-                          لینکی پەخشی یوتیوب (Embed)
-                        </label>
-                        <div className="relative">
-                          <Link2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slatey-400" />
-                          <input
-                            type="text"
-                            value={editState.streamUrl}
-                            onChange={(e) => setEditState((s) => ({ ...s, streamUrl: e.target.value }))}
-                            placeholder="https://www.youtube.com/watch?v=... یان Embed URL"
-                            className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-                            dir="ltr"
-                          />
-                        </div>
-                      </div>
+) : filtered.length === 0 ? (
 
-                      {/* Affiliate URL field */}
-                      <div>
-                        <label className="flex items-center gap-1.5 text-xs text-slatey-400 mb-1.5">
-                          <ExternalLink className="w-3.5 h-3.5 text-accent-400" />
-                          لینکی پلاتفۆرمی فەرمی (Affiliate URL)
-                        </label>
-                        <div className="relative">
-                          <Link2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slatey-400" />
-                          <input
-                            type="text"
-                            value={editState.affiliateUrl}
-                            onChange={(e) => setEditState((s) => ({ ...s, affiliateUrl: e.target.value }))}
-                            placeholder="https://www.dazn.com/... یان https://plus.espn.com/..."
-                            className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-                            dir="ltr"
-                          />
-                        </div>
-                      </div>
+هیچ یارییەک نەدۆزرایەوە
 
-                      {/* Platform name field */}
-                      <div>
-                        <label className="flex items-center gap-1.5 text-xs text-slatey-400 mb-1.5">
-                          <ExternalLink className="w-3.5 h-3.5 text-accent-400" />
-                          ناوی پلاتفۆرم
-                        </label>
-                        <input
-                          type="text"
-                          value={editState.platformName}
-                          onChange={(e) => setEditState((s) => ({ ...s, platformName: e.target.value }))}
-                          placeholder="DAZN, ESPN+, فەرمی+ ..."
-                          className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-                          dir="ltr"
-                        />
-                      </div>
+) : (
 
-                      {/* Save / Cancel */}
-                      <div className="flex gap-2 pt-1">
-                        <button
-                          onClick={() => handleSave(match.id)}
-                          disabled={saving}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
-                        >
-                          <Save className="w-4 h-4" />
-                          پاشەکەوت
-                        </button>
-                        <button
-                          onClick={cancelEdit}
-                          className="px-3 py-2 rounded-lg bg-bg-600 hover:bg-bg-500 text-slatey-300 text-sm transition-colors"
-                        >
-                          هەڵوەشاندنەوە
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex flex-col gap-1 min-w-0 flex-1">
-                        {hasYouTube && (
-                          <span className="text-xs text-accent-400 truncate" dir="ltr">
-                            <Youtube className="w-3 h-3 inline text-live-400" /> {data!.stream_url}
-                          </span>
-                        )}
-                        {hasAffiliate && (
-                          <span className="text-xs text-accent-400 truncate" dir="ltr">
-                            <ExternalLink className="w-3 h-3 inline" /> {data!.platform_name || 'Affiliate'}: {data!.affiliate_url}
-                          </span>
-                        )}
-                        {!hasAny && (
-                          <span className="text-xs text-slatey-500">هیچ لینکێک دانەنراوە</span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => startEdit(match.id)}
-                        className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                          justSaved
-                            ? 'bg-accent-500/20 text-accent-400'
-                            : hasAny
-                            ? 'bg-bg-600 hover:bg-bg-500 text-slatey-300'
-                            : 'bg-accent-500/15 text-accent-400 hover:bg-accent-500/25'
-                        }`}
-                      >
-                        {justSaved ? 'پاشەکەوتکرا' : hasAny ? 'گۆڕین' : 'لینک دانان'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+{filtered.map((match) => {
+const data = streamDataMap[match.id];
+const hasYouTube = !!data?.stream_url && data.stream_url.length > 0;
+const hasAffiliate = !!data?.affiliate_url && data.affiliate_url.length > 0;
+const hasAny = hasYouTube || hasAffiliate;
+const clickCount = data?.click_count || 0;
+const isEditing = editingId === match.id;
+const justSaved = savedId === match.id;
+return (
+
+{/* Match info row /}
+
+
+{matchStatusBadge(match.status)}
+{match.leagueName}
+
+{match.homeTeam.name} vs {match.awayTeam.name}
+
+
+
+{/ Click count badge */}
+
+
+کلیكەکان: {clickCount}
+
+{hasAny && !isEditing && (
+
+
+لینک دانراوە
+
+)}
+
+{/* Stream editor /}
+{isEditing ? (
+
+{/ YouTube embed field */}
+لینکی پەخشی یوتیوب (Embed)
+<input
+type="text"
+value={editState.streamUrl}
+onChange={(e) => setEditState((s) => ({ ...s, streamUrl: e.target.value }))}
+placeholder="youtube.com... یان Embed URL"
+className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
+dir="ltr"
+/>
+
+{/* Affiliate URL field */}
+لینکی پلاتفۆرمی فەرمی (Affiliate URL)
+<input
+type="text"
+value={editState.affiliateUrl}
+onChange={(e) => setEditState((s) => ({ ...s, affiliateUrl: e.target.value }))}
+placeholder="dazn.com... یان espn.com..."
+className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
+dir="ltr"
+/>
+
+{/* Platform name field */}
+ناوی پلاتفۆرم
+<input
+type="text"
+value={editState.platformName}
+onChange={(e) => setEditState((s) => ({ ...s, platformName: e.target.value }))}
+placeholder="DAZN, ESPN+, فەرمی+ ..."
+className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
+dir="ltr"
+/>
+{/* Save / Cancel */}
+
+<button
+onClick={() => handleSave(match.id)}
+disabled={saving}
+className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+>
+
+پاشەکەوت
+
+
+هەڵوەشاندنەوە
+
+
+
+) : (
+
+
+{hasYouTube && (
+
+YouTube ✓
+
+)}
+{hasAffiliate && (
+
+{data?.platform_name || 'Affiliate'} ✓
+
+)}
+{!hasAny && هیچ لینکێک دانەنراوە}
+
+<button
+onClick={() => startEdit(match.id)}
+className="px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-xs text-white transition-colors shrink-0"
+>
+{justSaved ? 'پاشەکەوت کرا ✓' : hasAny ? 'گۆڕین' : 'زیادکردنی لینک'}
+
+
+)}
+
+);
+})}
+
+)}
+
+
+);
 }
