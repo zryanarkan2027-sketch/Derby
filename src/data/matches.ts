@@ -24,14 +24,14 @@ export interface GoalScorer {
 }
 
 export interface MatchStats {
-  possession: [number, number];
-  shots: [number, number];
-  shotsOnTarget: [number, number];
-  corners: [number, number];
-  fouls: [number, number];
-  yellowCards: [number, number];
-  redCards: [number, number];
-  offsides: [number, number];
+  possession: Array<number>;
+  shots: Array<number>;
+  shotsOnTarget: Array<number>;
+  corners: Array<number>;
+  fouls: Array<number>;
+  yellowCards: Array<number>;
+  redCards: Array<number>;
+  offsides: Array<number>;
 }
 
 export interface Match {
@@ -92,18 +92,18 @@ export const iraqiFallbackMatches: Match[] = [
       { name: 'مەهەند عەلی (میمێ)', minute: 51, team: 'away' },
     ],
     stats: {
-      possession:,
-      shots:,
-      shotsOnTarget:,
-      corners:,
-      fouls:,
-      yellowCards:,
-      redCards:,
-      offsides:,
+      possession: Array.of(54, 46),
+      shots: Array.of(12, 9),
+      shotsOnTarget: Array.of(5, 4),
+      corners: Array.of(6, 3),
+      fouls: Array.of(11, 14),
+      yellowCards: Array.of(2, 3),
+      redCards: Array.of(0, 0),
+      offsides: Array.of(2, 1),
     },
     lineups: {
-      home: ['حسێن عەلی', 'هەردی سیامەند', 'نیاز محەمەد', 'کۆسرەت بایز', 'شێرکۆ کەریم', 'ئاکام هاشم', 'هەڵۆ فایەق', 'محەمەد قاسم', 'ئەمجەد ڕازی', 'بارزان شێرزاد', 'دیار یاخی'],
-      away: ['ئەحمەد باسل', 'مەناف یونس', 'سەعد ناتق', 'ئەحمەد یەحیا', 'فەهد یوسف', 'عەبدولڕەزاق قاسم', 'عەلا عەبدولزەهرە', 'مەهەند عەلی', 'حوسێن عەلی', 'ئەمیر سەباح', 'بەسام شاکر'],
+      home: Array.of('حسێن عەلی', 'هەردی سیامەند', 'نیاز محەمەد', 'کۆسرەت بایز', 'شێرکۆ کەریم', 'ئاکام هاشم', 'هەڵۆ فایەق', 'محەمەد قاسم', 'ئەمجەد ڕازی', 'بارزان شێرزاد', 'دیار یاخی'),
+      away: Array.of('ئەحمەد باسل', 'مەناف یونس', 'سەعد ناتق', 'ئەحمەد یەحیا', 'فەهد یوسف', 'عەبدولڕەزاق قاسم', 'عەلا عەبدولزەهرە', 'مەهەند عەلی', 'حوسێن عەلی', 'ئەمیر سەباح', 'بەسام شاکر'),
     },
   },
   {
@@ -127,8 +127,8 @@ export const iraqiFallbackMatches: Match[] = [
     kickoffDate: getRelativeIsoDate(0, 21, 0),
     venue: 'یاریگای نێودەوڵەتی شەعب - بەغدا',
     lineups: {
-      home: ['محەمەد حەمید', 'ئیبراهیم بایش', 'سەعد عەبدولئەمیر', 'حەمادی ئەحمەد', 'شەریف عەبدولکازم', 'عەلی جاسم', 'مستەفا سەعدون', 'ڕەسلان حەنون', 'حەسەن رائید', 'ئەیمەن حوسێن', 'موهەنەد عەبدولڕەحیم'],
-      away: ['جەلال حەسەن', 'عەلی فایز', 'مەیسەم جەبار', 'حوسێن فەلاح', 'مورتەزا هەدیب', 'لۆی عانی', 'حەسەن عەبدولکەریم', 'کەرار نەبیل', 'مراد محەمەد', 'ئەحمەد فەرحان', 'عەلا عەباس'],
+      home: Array.of('محەمەد حەمید', 'ئیبراهیم بایش', 'سەعد عەبدولئەمیر', 'حەمادی ئەحمەد', 'شەریف عەبدولکازم', 'عەلی جاسم', 'مستەفا سەعدون', 'ڕەسلان حەنون', 'حەسەن رائید', 'ئەیمەن حوسێن', 'موهەنەد عەبدولڕەحیم'),
+      away: Array.of('جەلال حەسەن', 'عەلی فایز', 'مەیسەم جەبار', 'حوسێن فەلاح', 'مورتەزا هەدیب', 'لۆی عانی', 'حەسەن عەبدولکەریم', 'کەرار نەبیل', 'مراد محەمەد', 'ئەحمەد فەرحان', 'عەلا عەباس'),
     },
   },
   {
@@ -152,8 +152,8 @@ export const iraqiFallbackMatches: Match[] = [
     kickoffDate: getRelativeIsoDate(1, 19, 30),
     venue: 'یاریگای نێودەوڵەتی زاخۆ',
     lineups: {
-      home: ['عەلی کازم', 'ئەمجەد وەلید', 'محەمەد عەلی عەبود', 'زێدان عەبدولجەبار', 'ئەحمەد ئیبراهیم', 'یوسف ئالۆسی', 'ناسر محەمەدۆ', 'فەرحان شکور', 'هێمن فەرەج', 'سەردار محەمەد', 'ئەحمەد زێرۆ'],
-      away: ['محەمەد ساڵح', 'سیابەند عەگید', 'هێران ئازاد', 'پەشەنگ عەبدوڵڵا', 'زیاد ئەحمەد', 'هارون ئەحمەد', 'یانیس حەمەد', 'ئەمیر ئیسماعیل', 'مەسعود تەها', 'شڤان جەمیل', 'دڵشاد حەمەد'],
+      home: Array.of('عەلی کازم', 'ئەمجەد وەلید', 'محەمەد عەلی عەبود', 'زێدان عەبدولجەبار', 'ئەحمەد ئیبراهیم', 'یوسف ئالۆسی', 'ناسر محەمەدۆ', 'فەرحان شکور', 'هێمن فەرەج', 'سەردار محەمەد', 'ئەحمەد زێرۆ'),
+      away: Array.of('محەمەد ساڵح', 'سیابەند عەگید', 'هێران ئازاد', 'پەشەنگ عەبدوڵڵا', 'زیاد ئەحمەد', 'هارون ئەحمەد', 'یانیس حەمەد', 'ئەمیر ئیسماعیل', 'مەسعود تەها', 'شڤان جەمیل', 'دڵشاد حەمەد'),
     },
   },
   {
@@ -184,16 +184,16 @@ export const iraqiFallbackMatches: Match[] = [
       { name: 'مەروان حوسێن', minute: 79, team: 'home' },
     ],
     stats: {
-      possession:,
-      shots:,
-      shotsOnTarget:,
-      corners:,
-      fouls:,
-      yellowCards:,
-      redCards:,
-      offsides:,
+      possession: Array.of(58, 42),
+      shots: Array.of(15, 7),
+      shotsOnTarget: Array.of(7, 3),
+      corners: Array.of(8, 2),
+      fouls: Array.of(9, 13),
+      yellowCards: Array.of(1, 2),
+      redCards: Array.of(0, 0),
+      offsides: Array.of(3, 1),
     },
   },
 ];
 
-export const allFallbackMatches: Match[] = [...iraqiFallbackMatches];
+export const allFallbackMatches: Match[] = Array.of(...iraqiFallbackMatches);
