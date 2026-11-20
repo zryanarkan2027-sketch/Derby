@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { type Match, type LeagueId } from '@/data/matches';
 import { fetchMatches } from '@/data/api';
-import { getStreamData } from '@/data/streamUrls';
+import { getStreamData, recordSiteVisit } from '@/data/streamUrls';
 import Header from '@/components/Header';
 import FilterTabs, { type FilterTab } from '@/components/FilterTabs';
 import LeagueFilterBar from '@/components/LeagueFilterBar';
@@ -22,6 +22,9 @@ type Page = 'home' | 'leagues' | 'live';
 
 function MainApp() {
   const [page, setPage] = useState<Page>('home');
+  useEffect(() => {
+  recordSiteVisit();
+}, []);
   const [filterTab, setFilterTab] = useState<FilterTab>('today');
   const [leagueFilter, setLeagueFilter] = useState<LeagueId>('all');
   const [searchQuery, setSearchQuery] = useState('');
