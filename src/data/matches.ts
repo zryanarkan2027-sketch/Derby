@@ -41,6 +41,14 @@ export function isTodayInBaghdad(isoDate: string, now: Date = new Date()): boole
   return getBaghdadDateKey(d) === getBaghdadDateKey(now);
 }
 
+export function isYesterdayInBaghdad(isoDate: string, now: Date = new Date()): boolean {
+  if (!isoDate) return false;
+  const d = new Date(isoDate);
+  if (isNaN(d.getTime())) return false;
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  return getBaghdadDateKey(d) === getBaghdadDateKey(yesterday);
+}
+
 export type MatchStatus = 'live' | 'upcoming' | 'finished';
 
 export interface TeamInfo {
