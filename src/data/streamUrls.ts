@@ -8,31 +8,21 @@ export interface StreamData {
   click_count: number;
 }
 
-interface StreamRow {
-  match_id: string;
-  stream_url: string;
-  affiliate_url?: string;
-  platform_name?: string;
-  click_count?: number;
-}
+export function convertToEmbedUrl(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
 
-export class StreamError extends Error {
-  status: number;
-  constructor(message: string, status: number) {
-    super(message);
-    this.status = status;
-    this.name = 'StreamError';
+  // Extract 11-character YouTube video ID from any format
+  const regExp = /(?:youtube\.com\/(?:watch\?v=|embed\/|live\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = trimmed.match(regExp);
+
+  if (match && match[1]) {
+    return `https://youtube.com{match[1]}`;
   }
+
+  return trimmed;
 }
 
-function extractYouTubeId(input: string): string | null {
-  const cleaned = input
-    .replace(/['"`<>]/g, '')
-    .replace(/&amp;/g, '&')
-    .trim();
-
-  const srcMatch = cleaned.match(/src=["']?([^"'\s>]+)/);
-  const candidate = srcMatch ? srcMatch[1] : cleaned;
 
   const idMatch = candidate.match(
     /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([a-zA-Z0-9_-]{11})/
