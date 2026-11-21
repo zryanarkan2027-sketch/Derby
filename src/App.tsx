@@ -8,7 +8,7 @@ import LeagueFilterBar from '@/components/LeagueFilterBar';
 import MatchList from '@/components/MatchList';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, Tv, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function App() {
   const path = window.location.pathname;
@@ -23,12 +23,13 @@ type Page = 'home' | 'leagues' | 'live';
 function MainApp() {
   const [page, setPage] = useState<Page>('home');
   useEffect(() => {
-  recordSiteVisit();
-}, []);
+    recordSiteVisit();
+  }, []);
   const [filterTab, setFilterTab] = useState<FilterTab>('today');
-  const [leagueFilter, setLeagueFilter] = useState<LeagueId>('all');
+  const [leagueFilter, setLeagueFilter] = useState<LeagueId | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [showBeinNews, setShowBeinNews] = useState(true);
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +52,6 @@ function MainApp() {
     loadMatches();
   }, [loadMatches]);
 
-  // Auto-refresh every 60 seconds for live scores
   useEffect(() => {
     const interval = setInterval(() => {
       loadMatches();
@@ -59,7 +59,6 @@ function MainApp() {
     return () => clearInterval(interval);
   }, [loadMatches]);
 
-  // When navigating via header "پەخشی ڕاستەوخۆ", set filter to live
   const handleNavigate = (target: Page) => {
     setPage(target);
     setSelectedMatch(null);
@@ -96,7 +95,6 @@ function MainApp() {
     setSelectedMatch(null);
   };
 
-  // Calculate counts per filter tab
   const counts = useMemo(() => {
     const today = matches.length;
     const live = matches.filter((m) => m.status === 'live').length;
@@ -105,7 +103,6 @@ function MainApp() {
     return { today, live, upcoming, finished };
   }, [matches]);
 
-  // Show match details if a match is selected
   if (selectedMatch) {
     return (
       <div className="min-h-screen bg-bg-900">
@@ -128,11 +125,14 @@ function MainApp() {
         searchQuery={searchQuery}
       />
 
-      {/* Hero banner */}
       <div className="relative overflow-hidden bg-gradient-to-l from-bg-800 via-bg-800 to-bg-700 border-b border-white/5">
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: 'radial-gradient(circle at 20% 50%, #10b981 0%, transparent 50%), radial-gradient(circle at 80% 50%, #ef4444 0%, transparent 50%)'
-        }} />
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 20% 50%, #10b981 0%, transparent 50%), radial-gradient(circle at 80% 50%, #ef4444 0%, transparent 50%)',
+          }}
+        />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           <div className="flex items-center gap-2 mb-2">
             <span className="w-2.5 h-2.5 rounded-full bg-live-500 animate-pulse-dot" />
@@ -155,21 +155,50 @@ function MainApp() {
         </div>
       </div>
 
-      {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Filter tabs */}
+        <div className="mb-6 glass-card overflow-hidden border border-purple-500/20">
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-l from-purple-900/40 to-bg-800 border-b border-white/5">
+            <div className="flex items-center gap-2.5">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-live-500/20 text-live-400 text-[11px] font-bold">
+                <span className="w-2 h-2 rounded-full bg-live-500 animate-ping" />
+                LIVE 24/7
+              </span>
+              <Tv className="w-4 h-4 text-purple-400" />
+              <span className="text-sm font-bold text-white">
+                پەخشی ڕاستەوخۆی کەناڵی beIN SPORTS الإخبارية
+              </span>
+            </div>
+            <button
+              onClick={() => setShowBeinNews((prev) => !prev)}
+              className="flex items-center gap-1 text-xs text-slatey-300 hover:text-white bg-white/5 px-2.5 py-1 rounded-lg transition-colors"
+            >
+              <span>{showBeinNews ? 'شاردنەوە' : 'پیشاندان'}</span>
+              {showBeinNews ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+          {showBeinNews && (
+            <div className="relative w-full aspect-video max-h-[420px] bg-black">
+              <iframe
+                src="https://youtube.com"
+                title="beIN SPORTS الإخبارية Live"
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          )}
+        </div>
+
         <FilterTabs
           active={filterTab}
           onChange={setFilterTab}
           counts={counts}
         />
 
-        {/* League filter */}
         <div className="mt-4">
           <LeagueFilterBar active={leagueFilter} onChange={setLeagueFilter} />
         </div>
 
-        {/* Loading state */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
@@ -177,7 +206,6 @@ function MainApp() {
           </div>
         ) : (
           <>
-            {/* Error + refresh */}
             {errorMsg && (
               <div className="mt-4 flex items-center justify-between gap-3 glass-card p-3">
                 <div className="flex items-center gap-2 text-xs text-slatey-400">
@@ -193,7 +221,6 @@ function MainApp() {
                 </button>
               </div>
             )}
-            {/* Match list */}
             <div className="mt-6">
               <MatchList
                 filterTab={filterTab}
@@ -227,7 +254,7 @@ function Footer() {
             </div>
           </div>
           <p className="text-xs text-slatey-500 text-center">
-            © ٢٠٢٦ Derby — ئەنجامی ڕاستەوخۆ و پەخشی فەرمی
+            © ٢٠٢٦ Derby — ئەنجامی ڕاستەوخۆ و پەخشی وەرزشی
           </p>
         </div>
       </div>
