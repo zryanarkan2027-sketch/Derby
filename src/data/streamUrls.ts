@@ -24,11 +24,12 @@ export function convertToEmbedUrl(input: string): string {
 }
 
 
-  const idMatch = candidate.match(
-    /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([a-zA-Z0-9_-]{11})/
-29 |   );
-30 |   return idMatch ? idMatch : null;
-31 | }
+  27 |   const idMatch = candidate.match(
+28 |     /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.+&)?v=|embed\/|...
+29 |   29 |   );
+30 |   30 |   return idMatch ? idMatch : null;
+31 |   31 | }
+
 
 export function convertToEmbedUrl(input: string): string {
   const trimmed = input.trim();
