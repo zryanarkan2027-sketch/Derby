@@ -272,7 +272,6 @@ export default function AdminPanel() {
         </div>
 
         {loading ? (
-Use code with caution.
 Loading matches...
 
 ) : filtered.length === 0 ? (
@@ -323,25 +322,33 @@ className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 tex
 dir="ltr"
 />
 
-Affiliate URL
-<input
-type="text"
-value={editState.affiliateUrl}
-onChange={(e) => setEditState((s) => ({ ...s, affiliateUrl: e.target.value }))}
-placeholder="https://..."
-className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white"
-dir="ltr"
-/>
+                      <div>
+                        <label className="block text-xs text-slatey-400 mb-1.5">
+                          Affiliate URL
+                        </label>
+                        <input
+                          type="text"
+                          value={editState.affiliateUrl}
+                          onChange={(e) => setEditState((s) => ({ ...s, affiliateUrl: e.target.value }))}
+                          placeholder="https://..."
+                          className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
+                          dir="ltr"
+                        />
+                      </div>
 
-Platform Name
-<input
-type="text"
-value={editState.platformName}
-onChange={(e) => setEditState((s) => ({ ...s, platformName: e.target.value }))}
-placeholder="DAZN, TurboVPN..."
-className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
-dir="ltr"
-/>
+                      <div>
+                        <label className="block text-xs text-slatey-400 mb-1.5">
+                          Platform Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editState.platformName}
+                          onChange={(e) => setEditState((s) => ({ ...s, platformName: e.target.value }))}
+                          placeholder="DAZN, TurboVPN..."
+                          className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
+                          dir="ltr"
+                        />
+                      </div>
 <button
 onClick={() => handleSave(match.id)}
 disabled={saving}
