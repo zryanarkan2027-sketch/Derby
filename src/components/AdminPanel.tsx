@@ -282,8 +282,8 @@ className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2.5 t
           <div className="glass-card p-12 text-center">
             <p className="text-slatey-400">هیچ یارییەک نەدۆزرایەوە</p>
           </div>
-        ) : (
-
+             ) : (
+          <div className="space-y-2">
 {filtered.map((match) => {
 const data = streamDataMap[match.id];
 const hasYouTube = !!data?.stream_url && data.stream_url.length > 0;
