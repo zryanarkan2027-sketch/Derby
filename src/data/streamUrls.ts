@@ -26,9 +26,9 @@ export function convertToEmbedUrl(input: string): string {
 
   const idMatch = candidate.match(
     /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([a-zA-Z0-9_-]{11})/
-  );
-  return idMatch ? idMatch : null;
-}
+29 |   );
+30 |   return idMatch ? idMatch : null;
+31 | }
 
 export function convertToEmbedUrl(input: string): string {
   const trimmed = input.trim();
