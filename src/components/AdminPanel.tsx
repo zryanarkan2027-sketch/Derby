@@ -110,7 +110,7 @@ export default function AdminPanel() {
     const existing = streamDataMap[matchId];
     setEditingId(matchId);
     setEditState({
-      streamUrl: existing?.stream_url || '',
+      streamUrl: '',
       affiliateUrl: existing?.affiliate_url || '',
       platformName: existing?.platform_name || '',
     });
