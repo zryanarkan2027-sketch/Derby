@@ -280,10 +280,10 @@ export default function AdminPanel() {
           <div className="glass-card p-12 text-center">
             <p className="text-slatey-400">No matches found</p>
           </div>
-        ) : (
+               ) : (
+          <div className="space-y-2">
+            {filtered.map((match) => {
 
-
-{filtered.map((match) => {
 const data = streamDataMap[match.id];
 const hasYouTube = !!data?.stream_url && data.stream_url.length > 0;
 const hasAffiliate = !!data?.affiliate_url && data.affiliate_url.length > 0;
