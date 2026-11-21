@@ -266,3 +266,119 @@ export default function AdminPanel() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="گەڕان بۆ یاری..."
+className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2.5 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
+/>
+{loading ? (
+
+
+دەرهێنانی یارییەکان...
+
+) : filtered.length === 0 ? (
+
+هیچ یارییەک نەدۆزرایەوە
+
+) : (
+
+{filtered.map((match) => {
+const data = streamDataMap[match.id];
+const hasYouTube = !!data?.stream_url && data.stream_url.length > 0;
+const hasAffiliate = !!data?.affiliate_url && data.affiliate_url.length > 0;
+const hasAny = hasYouTube || hasAffiliate;
+const clickCount = data?.click_count || 0;
+const isEditing = editingId === match.id;
+const justSaved = savedId === match.id;
+return (
+
+
+
+{matchStatusBadge(match.status)}
+{match.leagueName}
+
+{match.homeTeam.name} vs {match.awayTeam.name}
+
+
+
+
+
+کلیكەکان: {clickCount}
+
+{hasAny && !isEditing && (
+
+
+لینک دانراوە
+
+)}
+
+{isEditing ? (
+
+<input
+type="text"
+value={editState.streamUrl}
+onChange={(e) => setEditState((s) => ({ ...s, streamUrl: e.target.value }))}
+placeholder="youtube.com... یان Embed URL"
+className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
+dir="ltr"
+/>
+
+<input
+type="text"
+value={editState.affiliateUrl}
+onChange={(e) => setEditState((s) => ({ ...s, affiliateUrl: e.target.value }))}
+placeholder="dazn.com... یان espn.com..."
+className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
+dir="ltr"
+/>
+
+<input
+type="text"
+value={editState.platformName}
+onChange={(e) => setEditState((s) => ({ ...s, platformName: e.target.value }))}
+placeholder="DAZN, ESPN+, فەرمی+ ..."
+className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
+dir="ltr"
+/>
+<button
+onClick={() => handleSave(match.id)}
+disabled={saving}
+className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+>
+
+پاشەکەوت
+
+
+هەڵوەشاندنەوە
+
+
+
+) : (
+
+
+{hasYouTube && (
+
+YouTube ✓
+
+)}
+{hasAffiliate && (
+
+{data?.platform_name || 'Affiliate'} ✓
+
+)}
+{!hasAny && هیچ لینکێک دانەنراوە}
+
+<button
+onClick={() => startEdit(match.id)}
+className="px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-xs text-white transition-colors shrink-0"
+>
+{justSaved ? 'پاشەکەوت کرا ✓' : hasAny ? 'گۆڕین' : 'زیادکردنی لینک'}
+
+
+)}
+
+);
+})}
+
+)}
+
+
+);
+}
