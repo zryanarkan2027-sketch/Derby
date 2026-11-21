@@ -1,6 +1,23 @@
 const SUPABASE_URL = 'https://oojnshatzltixdbvkheg.supabase.co/rest/v1';
 const SUPABASE_ANON_KEY = 'sb_publishable_zhC3cWCxc7hOHbeD1_ZahA_34Ut2hpx';
 
+export class StreamError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'StreamError';
+    this.status = status;
+  }
+}
+
+interface StreamRow {
+  match_id: string;
+  stream_url: string | null;
+  affiliate_url: string | null;
+  platform_name: string | null;
+  click_count: number | null;
+}
+
 export interface StreamData {
   stream_url: string;
   affiliate_url: string;
@@ -12,38 +29,11 @@ export function convertToEmbedUrl(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return '';
 
-  // Extract 11-character YouTube video ID from any format
   const regExp = /(?:youtube\.com\/(?:watch\?v=|embed\/|live\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
   const match = trimmed.match(regExp);
 
   if (match && match[1]) {
-    return `https://youtube.com{match[1]}`;
-  }
-
-  return trimmed;
-}
-
-
-  27 |   const idMatch = candidate.match(
-28 |     /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.+&)?v=|embed\/|...
-29 |   29 |   );
-30 |   30 |   return idMatch ? idMatch : null;
-31 |   31 | }
-
-
-export function convertToEmbedUrl(input: string): string {
-  const trimmed = input.trim();
-  if (!trimmed) return '';
-
-  const ytId = extractYouTubeId(trimmed);
-  if (ytId) {
-    return `https://www.youtube.com/embed/${ytId}`;
-  }
-
-  const srcMatch = trimmed.match(/src=["']?([^"'\s>]+)/);
-  if (srcMatch) {
-    const url = srcMatch.replace(/['"`<>]/g, '').trim();
-    if (url) return url;
+    return `https://www.youtube.com/embed/${match[1]}`;
   }
 
   return trimmed.replace(/['"`<>]/g, '').trim();
@@ -104,7 +94,7 @@ export async function getStreamData(matchId: string): Promise<StreamData | undef
   );
   const rows: StreamRow[] = await resp.json();
   if (rows.length === 0) return undefined;
-  return cleanRow(rows);
+  return cleanRow(rows[0]);
 }
 
 export interface StreamUpdate {
@@ -153,7 +143,7 @@ export async function incrementClickCount(matchId: string): Promise<void> {
       `/match_streams?match_id=eq.${encodeURIComponent(matchId)}&select=click_count`
     );
     const rows: StreamRow[] = await resp.json();
-    const current = rows.length > 0 ? (rows.click_count || 0) : 0;
+    const current = rows.length > 0 ? (rows[0].click_count || 0) : 0;
 
     await supabaseFetch(
       `/match_streams?match_id=eq.${encodeURIComponent(matchId)}`,
@@ -177,7 +167,7 @@ export async function recordSiteVisit(): Promise<void> {
       '/match_streams?match_id=eq.__SITE_STATS__&select=click_count'
     );
     const rows: StreamRow[] = await resp.json();
-    const current = rows.length > 0 ? (rows.click_count || 0) : 0;
+    const current = rows.length > 0 ? (rows[0].click_count || 0) : 0;
 
     await supabaseFetch('/match_streams', {
       method: 'POST',
