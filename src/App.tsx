@@ -12,7 +12,9 @@ import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
 
 export default function App() {
   const path = window.location.pathname;
-  if (path === '/admin') {
+  const hash = window.location.hash;
+  const search = window.location.search;
+  if (path === '/admin' || hash === '#admin' || search.includes('admin')) {
     return <AdminPanel />;
   }
   return <MainApp />;
