@@ -6,6 +6,16 @@ export type LeagueId =
   | 'serie_a'
   | 'international';
 
+export const leagues: { id: LeagueId | 'all'; name: string; nameKu: string }[] = Array.of(
+  { id: 'all', name: 'All', nameKu: 'هەموو' },
+  { id: 'iraq_stars', name: 'Iraq Stars League', nameKu: 'خولی عێراق' },
+  { id: 'premier_league', name: 'Premier League', nameKu: 'پریمەرلیگ' },
+  { id: 'la_liga', name: 'La Liga', nameKu: 'لالیگا' },
+  { id: 'champions_league', name: 'Champions League', nameKu: 'چامپیۆنزلیگ' },
+  { id: 'serie_a', name: 'Serie A', nameKu: 'سێریا ئەی' },
+  { id: 'international', name: 'International', nameKu: 'نێودەوڵەتی' }
+);
+
 export type MatchStatus = 'live' | 'upcoming' | 'finished';
 
 export interface TeamInfo {
@@ -63,7 +73,7 @@ function getRelativeIsoDate(dayOffset: number, hour: number, minute: number): st
   return d.toISOString();
 }
 
-export const iraqiFallbackMatches: Match[] = [
+export const iraqiFallbackMatches: Match[] = Array.of(
   {
     id: 'iraq-stars-101',
     leagueId: 'iraq_stars',
@@ -87,10 +97,10 @@ export const iraqiFallbackMatches: Match[] = [
     homeScore: 1,
     awayScore: 1,
     venue: 'یاریگای شەهید فەڕەنسۆ هەریری - هەولێر',
-    goals: [
+    goals: Array.of(
       { name: 'شێرکۆ کەریم', minute: 22, team: 'home' },
-      { name: 'مەهەند عەلی (میمێ)', minute: 51, team: 'away' },
-    ],
+      { name: 'مەهەند عەلی (میمێ)', minute: 51, team: 'away' }
+    ),
     stats: {
       possession: Array.of(54, 46),
       shots: Array.of(12, 9),
@@ -178,11 +188,11 @@ export const iraqiFallbackMatches: Match[] = [
     homeScore: 2,
     awayScore: 1,
     venue: 'یاریگای نەورۆز - سلێمانی',
-    goals: [
+    goals: Array.of(
       { name: 'ئاسۆ ڕۆستەم', minute: 18, team: 'home' },
       { name: 'وەکاع ڕەمەزان', minute: 44, team: 'away' },
-      { name: 'مەروان حوسێن', minute: 79, team: 'home' },
-    ],
+      { name: 'مەروان حوسێن', minute: 79, team: 'home' }
+    ),
     stats: {
       possession: Array.of(58, 42),
       shots: Array.of(15, 7),
@@ -193,7 +203,7 @@ export const iraqiFallbackMatches: Match[] = [
       redCards: Array.of(0, 0),
       offsides: Array.of(3, 1),
     },
-  },
-];
+  }
+);
 
 export const allFallbackMatches: Match[] = Array.of(...iraqiFallbackMatches);
