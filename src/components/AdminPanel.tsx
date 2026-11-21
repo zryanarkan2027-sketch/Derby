@@ -124,7 +124,6 @@ export default function AdminPanel() {
     window.location.href = '/';
   };
 
-  // PIN gate
   if (!authenticated) {
     return (
       <div className="min-h-screen bg-bg-900 flex items-center justify-center px-4">
@@ -178,7 +177,6 @@ export default function AdminPanel() {
     );
   }
 
-  // Admin dashboard
   let filtered = matches;
   if (searchQuery.trim()) {
     const q = searchQuery.trim();
@@ -200,7 +198,6 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-bg-900">
-      {/* Admin header */}
       <div className="sticky top-0 z-50 bg-bg-800/95 backdrop-blur-md border-b border-white/5">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -230,7 +227,6 @@ export default function AdminPanel() {
           لینکی YouTube Embed و پلاتفۆرمی فەرمی (Affiliate) بۆ هەر یارییەک دابنێ
         </p>
 
-        {/* Visitor & Clicks Analytics Summary */}
         <div className="grid grid-cols-2 gap-3 mb-5">
           <div className="glass-card p-4 border border-accent-500/20 text-center">
             <p className="text-xs text-slatey-400 mb-1">کۆی گشتی سەردانکەرانی وێبسایت</p>
@@ -263,7 +259,6 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slatey-400" />
           <input
@@ -271,130 +266,3 @@ export default function AdminPanel() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="گەڕان بۆ یاری..."
-className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2.5 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-/>
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
-            <p className="text-slatey-400 text-sm">دەرهێنانی یارییەکان...</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="glass-card p-12 text-center">
-            <p className="text-slatey-400">هیچ یارییەک نەدۆزرایەوە</p>
-          </div>
-             ) : (
-          <div className="space-y-2">
-{filtered.map((match) => {
-const data = streamDataMap[match.id];
-const hasYouTube = !!data?.stream_url && data.stream_url.length > 0;
-const hasAffiliate = !!data?.affiliate_url && data.affiliate_url.length > 0;
-const hasAny = hasYouTube || hasAffiliate;
-const clickCount = data?.click_count || 0;
-const isEditing = editingId === match.id;
-const justSaved = savedId === match.id;
-return (
-
-{/* Match info row /}
-
-
-{matchStatusBadge(match.status)}
-{match.leagueName}
-
-{match.homeTeam.name} vs {match.awayTeam.name}
-
-
-
-{/ Click count badge */}
-
-
-کلیكەکان: {clickCount}
-
-{hasAny && !isEditing && (
-
-
-لینک دانراوە
-
-)}
-
-{/* Stream editor /}
-{isEditing ? (
-
-{/ YouTube embed field */}
-لینکی پەخشی یوتیوب (Embed)
-<input
-type="text"
-value={editState.streamUrl}
-onChange={(e) => setEditState((s) => ({ ...s, streamUrl: e.target.value }))}
-placeholder="youtube.com... یان Embed URL"
-className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-dir="ltr"
-/>
-
-{/* Affiliate URL field */}
-لینکی پلاتفۆرمی فەرمی (Affiliate URL)
-<input
-type="text"
-value={editState.affiliateUrl}
-onChange={(e) => setEditState((s) => ({ ...s, affiliateUrl: e.target.value }))}
-placeholder="dazn.com... یان espn.com..."
-className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-dir="ltr"
-/>
-
-{/* Platform name field */}
-ناوی پلاتفۆرم
-<input
-type="text"
-value={editState.platformName}
-onChange={(e) => setEditState((s) => ({ ...s, platformName: e.target.value }))}
-placeholder="DAZN, ESPN+, فەرمی+ ..."
-className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-dir="ltr"
-/>
-{/* Save / Cancel */}
-
-<button
-onClick={() => handleSave(match.id)}
-disabled={saving}
-className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
->
-
-پاشەکەوت
-
-
-هەڵوەشاندنەوە
-
-
-
-) : (
-
-
-{hasYouTube && (
-
-YouTube ✓
-
-)}
-{hasAffiliate && (
-
-{data?.platform_name || 'Affiliate'} ✓
-
-)}
-{!hasAny && هیچ لینکێک دانەنراوە}
-
-<button
-onClick={() => startEdit(match.id)}
-className="px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-xs text-white transition-colors shrink-0"
->
-{justSaved ? 'پاشەکەوت کرا ✓' : hasAny ? 'گۆڕین' : 'زیادکردنی لینک'}
-
-
-)}
-
-);
-})}
-
-)}
-
-
-);
-}
