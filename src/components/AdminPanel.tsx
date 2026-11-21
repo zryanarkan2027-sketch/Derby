@@ -271,10 +271,12 @@ export default function AdminPanel() {
           />
         </div>
 
-        {loading ? (
-Loading matches...
-
-) : filtered.length === 0 ? (
+               {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
+            <p className="text-slatey-400 text-sm">Loading matches...</p>
+          </div>
+        ) : filtered.length === 0 ? (
 
 No matches found
 
