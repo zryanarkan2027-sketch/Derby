@@ -288,98 +288,129 @@ const hasAny = hasYouTube || hasAffiliate;
 const clickCount = data?.click_count || 0;
 const isEditing = editingId === match.id;
 const justSaved = savedId === match.id;
-return (
+              return (
+                <div key={match.id} className="glass-card p-4">
+                  <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      {matchStatusBadge(match.status)}
+                      <span className="text-xs text-slatey-400 shrink-0">{match.leagueName}</span>
+                      <span className="text-sm text-white truncate">
+                        {match.homeTeam.name} vs {match.awayTeam.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="flex items-center gap-1 text-[10px] text-slatey-400 bg-bg-600/50 rounded-full px-2 py-0.5">
+                        <MousePointerClick className="w-3 h-3" />
+                        Clicks: {clickCount}
+                      </span>
+                      {hasAny && !isEditing && (
+                        <span className="flex items-center gap-1 text-[10px] text-accent-400">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          Active
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs text-slatey-400 mb-1.5">
+                          <Youtube className="w-3.5 h-3.5 text-live-400" />
+                          YouTube Embed URL
+                        </label>
+                        <div className="relative">
+                          <Link2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slatey-400" />
+                          <input
+                            type="text"
+                            value={editState.streamUrl}
+                            onChange={(e) => setEditState((s) => ({ ...s, streamUrl: e.target.value }))}
+                            placeholder="https://youtube.com..."
+                            className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
 
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs text-slatey-400 mb-1.5">
+                          <ExternalLink className="w-3.5 h-3.5 text-accent-400" />
+                          Affiliate URL
+                        </label>
+                        <div className="relative">
+                          <Link2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slatey-400" />
+                          <input
+                            type="text"
+                            value={editState.affiliateUrl}
+                            onChange={(e) => setEditState((s) => ({ ...s, affiliateUrl: e.target.value }))}
+                            placeholder="https://..."
+                            className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
 
-{matchStatusBadge(match.status)}
-{match.leagueName}
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs text-slatey-400 mb-1.5">
+                          <ExternalLink className="w-3.5 h-3.5 text-accent-400" />
+                          Platform Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editState.platformName}
+                          onChange={(e) => setEditState((s) => ({ ...s, platformName: e.target.value }))}
+                          placeholder="DAZN, TurboVPN..."
+                          className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
+                          dir="ltr"
+                        />
+                      </div>
 
-{match.homeTeam.name} vs {match.awayTeam.name}
-
-
-
-
-
-کلیكەکان: {clickCount}
-
-{hasAny && !isEditing && (
-
-
-لینک دانراوە
-
-)}
-
-{isEditing ? (
-
-<input
-type="text"
-value={editState.streamUrl}
-onChange={(e) => setEditState((s) => ({ ...s, streamUrl: e.target.value }))}
-placeholder="youtube.com... یان Embed URL"
-className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-dir="ltr"
-/>
-
-<input
-type="text"
-value={editState.affiliateUrl}
-onChange={(e) => setEditState((s) => ({ ...s, affiliateUrl: e.target.value }))}
-placeholder="dazn.com... یان espn.com..."
-className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-dir="ltr"
-/>
-
-<input
-type="text"
-value={editState.platformName}
-onChange={(e) => setEditState((s) => ({ ...s, platformName: e.target.value }))}
-placeholder="DAZN, ESPN+, فەرمی+ ..."
-className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
-dir="ltr"
-/>
-<button
-onClick={() => handleSave(match.id)}
-disabled={saving}
-className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
->
-
-پاشەکەوت
-
-
-هەڵوەشاندنەوە
-
-
-
-) : (
-
-
-{hasYouTube && (
-
-YouTube ✓
-
-)}
-{hasAffiliate && (
-
-{data?.platform_name || 'Affiliate'} ✓
-
-)}
-{!hasAny && هیچ لینکێک دانەنراوە}
-
-<button
-onClick={() => startEdit(match.id)}
-className="px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-xs text-white transition-colors shrink-0"
->
-{justSaved ? 'پاشەکەوت کرا ✓' : hasAny ? 'گۆڕین' : 'زیادکردنی لینک'}
-
-
-)}
-
-);
-})}
-
-)}
-
-
-);
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleSave(match.id)}
+                          disabled={saving}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium"
+                        >
+                          <Save className="w-4 h-4" />
+                          Save
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="px-3 py-2 rounded-lg bg-bg-600 hover:bg-bg-500 text-slatey-300 text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <div className="flex flex-wrap gap-2 text-xs text-slatey-400 truncate">
+                        {hasYouTube && (
+                          <span className="bg-bg-600/60 px-2 py-1 rounded text-live-400">
+                            YouTube
+                          </span>
+                        )}
+                        {hasAffiliate && (
+                          <span className="bg-bg-600/60 px-2 py-1 rounded text-accent-400">
+                            {data?.platform_name || 'Affiliate'}
+                          </span>
+                        )}
+                        {!hasAny && <span>No link set</span>}
+                      </div>
+                      <button
+                        onClick={() => startEdit(match.id)}
+                        className="px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-xs text-white shrink-0"
+                      >
+                        {justSaved ? 'Saved' : hasAny ? 'Edit' : 'Add Link'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
