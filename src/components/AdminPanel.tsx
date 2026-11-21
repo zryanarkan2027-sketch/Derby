@@ -268,18 +268,19 @@ export default function AdminPanel() {
             placeholder="گەڕان بۆ یاری..."
 className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2.5 text-sm text-white placeholder:text-slatey-400 focus:outline-none focus:border-accent-500/50 transition-colors"
 />
-{loading ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
+            <p className="text-slatey-400 text-sm">Loading matches...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="glass-card p-12 text-center">
+            <p className="text-slatey-400">No matches found</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filtered.map((match) => {
 
-
-دەرهێنانی یارییەکان...
-
-) : filtered.length === 0 ? (
-
-هیچ یارییەک نەدۆزرایەوە
-
-) : (
-
-{filtered.map((match) => {
 const data = streamDataMap[match.id];
 const hasYouTube = !!data?.stream_url && data.stream_url.length > 0;
 const hasAffiliate = !!data?.affiliate_url && data.affiliate_url.length > 0;
