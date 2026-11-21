@@ -14,7 +14,7 @@ import {
   AlertCircle, MousePointerClick, Youtube, ExternalLink,
 } from 'lucide-react';
 
-const ADMIN_PIN = '1234';
+const ADMIN_PIN = '456564';
 
 interface EditState {
   streamUrl: string;
