@@ -276,11 +276,12 @@ export default function AdminPanel() {
             <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
             <p className="text-slatey-400 text-sm">Loading matches...</p>
           </div>
-        ) : filtered.length === 0 ? (
+             ) : filtered.length === 0 ? (
+          <div className="glass-card p-12 text-center">
+            <p className="text-slatey-400">No matches found</p>
+          </div>
+        ) : (
 
-No matches found
-
-) : (
 
 {filtered.map((match) => {
 const data = streamDataMap[match.id];
