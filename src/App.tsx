@@ -178,7 +178,7 @@ function MainApp() {
               <span className="w-2.5 h-2.5 rounded-full bg-live-500 animate-pulse" />
               <Tv className="w-4 h-4 text-accent-400" />
               <span className="text-sm font-bold text-white" dir="ltr">
-                beIN SPORTS NEWS
+                پەخشی تایبەت و ڕاستەوخۆ
               </span>
             </div>
             <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-live-500/15 text-live-400">
