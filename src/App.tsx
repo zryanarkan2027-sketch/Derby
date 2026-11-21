@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { type Match, type LeagueId } from '@/data/matches';
+import { type Match, type LeagueFilter, isTodayInBaghdad } from '@/data/matches';
 import { fetchMatches } from '@/data/api';
 import { getStreamData, recordSiteVisit } from '@/data/streamUrls';
 import Header from '@/components/Header';
@@ -29,7 +29,7 @@ function MainApp() {
   }, []);
 
   const [filterTab, setFilterTab] = useState<FilterTab>('today');
-  const [leagueFilter, setLeagueFilter] = useState<LeagueId | 'all'>('all');
+  const [leagueFilter, setLeagueFilter] = useState<LeagueFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
@@ -111,7 +111,8 @@ function MainApp() {
   };
 
   const counts = useMemo(() => {
-    const today = matches.length;
+    const now = new Date();
+    const today = matches.filter((m) => isTodayInBaghdad(m.kickoffDate, now)).length;
     const live = matches.filter((m) => m.status === 'live').length;
     const upcoming = matches.filter((m) => m.status === 'upcoming').length;
     const finished = matches.filter((m) => m.status === 'finished').length;

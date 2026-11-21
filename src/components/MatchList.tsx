@@ -1,11 +1,11 @@
-import { type Match, type LeagueId } from '@/data/matches';
+import { type Match, type LeagueFilter, isTodayInBaghdad } from '@/data/matches';
 import type { FilterTab } from './FilterTabs';
 import { filterToStatus } from './FilterTabs';
 import MatchCard from './MatchCard';
 
 interface MatchListProps {
   filterTab: FilterTab;
-  leagueFilter: LeagueId;
+  leagueFilter: LeagueFilter;
   searchQuery: string;
   onMatchClick: (match: Match) => void;
   matches: Match[];
@@ -19,9 +19,11 @@ export default function MatchList({
   matches,
 }: MatchListProps) {
   const statuses = filterToStatus(filterTab);
+  const now = new Date();
 
   let filtered = matches.filter((m) => {
     const statusMatch = statuses.includes(m.status);
+    if (filterTab === 'today' && !isTodayInBaghdad(m.kickoffDate, now)) return false;
     const leagueMatch =
       leagueFilter === 'all' || m.leagueId === leagueFilter;
 
