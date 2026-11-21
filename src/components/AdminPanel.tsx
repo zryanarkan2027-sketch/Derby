@@ -149,7 +149,7 @@ export default function AdminPanel() {
                 setPinError(false);
               }}
               placeholder="• • • •"
-              maxLength={4}
+              maxLength={6}
               autoFocus
               className={`w-full text-center text-2xl tracking-[0.5em] bg-bg-600 border rounded-xl py-3 text-white placeholder:text-slatey-600 focus:outline-none transition-colors ${
                 pinError ? 'border-live-500' : 'border-white/5 focus:border-accent-500/50'
