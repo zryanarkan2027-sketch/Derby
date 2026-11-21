@@ -8,7 +8,7 @@ import LeagueFilterBar from '@/components/LeagueFilterBar';
 import MatchList from '@/components/MatchList';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
-import { Loader2, AlertCircle, RefreshCw, Tv, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
 
 export default function App() {
   const path = window.location.pathname;
@@ -25,16 +25,29 @@ function MainApp() {
   useEffect(() => {
     recordSiteVisit();
   }, []);
+
   const [filterTab, setFilterTab] = useState<FilterTab>('today');
   const [leagueFilter, setLeagueFilter] = useState<LeagueId | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [showBeinNews, setShowBeinNews] = useState(true);
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [usingFallback, setUsingFallback] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [beinNewsUrl, setBeinNewsUrl] = useState<string>(
+    'https://youtube.com'
+  );
+
+  useEffect(() => {
+    getStreamData('__BEIN_NEWS__')
+      .then((data) => {
+        if (data?.stream_url) {
+          setBeinNewsUrl(data.stream_url);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const loadMatches = useCallback(async () => {
     setLoading(true);
@@ -125,6 +138,7 @@ function MainApp() {
         searchQuery={searchQuery}
       />
 
+      {/* Hero banner */}
       <div className="relative overflow-hidden bg-gradient-to-l from-bg-800 via-bg-800 to-bg-700 border-b border-white/5">
         <div
           className="absolute inset-0 opacity-10"
@@ -155,50 +169,46 @@ function MainApp() {
         </div>
       </div>
 
+      {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6 glass-card overflow-hidden border border-purple-500/20">
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-l from-purple-900/40 to-bg-800 border-b border-white/5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-live-500/20 text-live-400 text-[11px] font-bold">
-                <span className="w-2 h-2 rounded-full bg-live-500 animate-ping" />
-                LIVE 24/7
-              </span>
-              <Tv className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-bold text-white">
-                پەخشی ڕاستەوخۆی کەناڵی beIN SPORTS الإخبارية
+        {/* 24/7 beIN SPORTS NEWS Live Box */}
+        <div className="glass-card overflow-hidden mb-6 border border-white/10">
+          <div className="flex items-center justify-between px-4 py-3 bg-bg-800/80 border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-live-500 animate-pulse" />
+              <Tv className="w-4 h-4 text-accent-400" />
+              <span className="text-sm font-bold text-white" dir="ltr">
+                beIN SPORTS NEWS
               </span>
             </div>
-            <button
-              onClick={() => setShowBeinNews((prev) => !prev)}
-              className="flex items-center gap-1 text-xs text-slatey-300 hover:text-white bg-white/5 px-2.5 py-1 rounded-lg transition-colors"
-            >
-              <span>{showBeinNews ? 'شاردنەوە' : 'پیشاندان'}</span>
-              {showBeinNews ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-live-500/15 text-live-400">
+              24/7 LIVE
+            </span>
           </div>
-          {showBeinNews && (
-            <div className="relative w-full aspect-video max-h-[420px] bg-black">
-              <iframe
-                src="https://youtube.com"
-                title="beIN SPORTS الإخبارية Live"
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          )}
+          <div className="relative w-full aspect-video max-h-[460px] bg-black">
+            <iframe
+              src={beinNewsUrl}
+              title="beIN SPORTS NEWS Live"
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
         </div>
 
+        {/* Filter tabs */}
         <FilterTabs
           active={filterTab}
           onChange={setFilterTab}
           counts={counts}
         />
 
+        {/* League filter */}
         <div className="mt-4">
           <LeagueFilterBar active={leagueFilter} onChange={setLeagueFilter} />
         </div>
 
+        {/* Loading state */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
@@ -250,7 +260,7 @@ function Footer() {
             </div>
             <div className="flex flex-col leading-tight">
               <span className="text-white font-bold text-sm">Derby</span>
-              <span className="text-accent-400 text-[10px]">derby</span>
+              <span className="text-accent-400 text-[10px]">derby-live</span>
             </div>
           </div>
           <p className="text-xs text-slatey-500 text-center">
