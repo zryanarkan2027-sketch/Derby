@@ -263,7 +263,7 @@ export default function AdminPanel() {
           <div className="flex items-center justify-between gap-3 mb-2">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-full bg-live-500/15 text-live-400 text-[10px] font-bold">24/7 LIVE</span>
-              <span className="text-sm font-bold text-white">beIN SPORTS NEWS</span>
+              <span className="text-sm font-bold text-white">Featured Stream</span>
             </div>
             {editingId !== '__BEIN_NEWS__' && (
               <button
