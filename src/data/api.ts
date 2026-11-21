@@ -28,13 +28,14 @@ const kickoffTimeFormatter = new Intl.DateTimeFormat('en-GB', {
 });
 
 /**
- * ESPN's `dates` param uses its own (US) day boundaries, so a single Baghdad
- * day can span two ESPN days. Fetch yesterday/today/tomorrow to cover it fully
- * (and to populate the upcoming/finished tabs).
+ * ESPN's `dates` param uses US (Eastern) day boundaries, so the early hours of
+ * a Baghdad day belong to the previous ESPN day. Fetching from two days back
+ * through tomorrow fully covers Baghdad's yesterday (for the results ticker)
+ * and today (for the Today tab), plus tomorrow for the upcoming tab.
  */
 function getEspnDateParams(now: Date = new Date()): string[] {
   const dayMs = 24 * 60 * 60 * 1000;
-  return [-1, 0, 1].map((offset) =>
+  return [-2, -1, 0, 1].map((offset) =>
     getBaghdadDateKey(new Date(now.getTime() + offset * dayMs)).replace(/-/g, '')
   );
 }

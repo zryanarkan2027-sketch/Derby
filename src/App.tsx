@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import FilterTabs, { type FilterTab } from '@/components/FilterTabs';
 import LeagueFilterBar from '@/components/LeagueFilterBar';
 import MatchList from '@/components/MatchList';
+import ResultsTicker from '@/components/ResultsTicker';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
 import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
@@ -171,6 +172,9 @@ function MainApp() {
           )}
         </div>
       </div>
+
+      {/* Live scores & results ticker */}
+      <ResultsTicker matches={matches} onMatchClick={handleMatchClick} />
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

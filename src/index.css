@@ -50,4 +50,35 @@
   .live-glow {
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
   }
+
+  /* Moves content left -> right; the track holds two identical copies for a seamless loop */
+  @keyframes ticker-ltr {
+    from {
+      transform: translate3d(-50%, 0, 0);
+    }
+    to {
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .ticker-track {
+    animation: ticker-ltr var(--ticker-duration, 60s) linear infinite;
+    will-change: transform;
+  }
+
+  .ticker-viewport:hover .ticker-track,
+  .ticker-viewport:focus-within .ticker-track {
+    animation-play-state: paused;
+  }
+
+  .ticker-fade {
+    mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track {
+      animation-play-state: paused;
+    }
+  }
 }
