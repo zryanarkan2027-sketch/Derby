@@ -4,17 +4,42 @@ export type LeagueId =
   | 'la_liga'
   | 'champions_league'
   | 'serie_a'
+  | 'bundesliga'
   | 'international';
 
-export const leagues: { id: LeagueId | 'all'; name: string; nameKu: string }[] = Array.of(
+export type LeagueFilter = LeagueId | 'all';
+
+export const leagues: { id: LeagueFilter; name: string; nameKu: string; apiCode?: string }[] = Array.of(
   { id: 'all', name: 'All', nameKu: 'هەموو' },
   { id: 'iraq_stars', name: 'Iraq Stars League', nameKu: 'خولی عێراق' },
-  { id: 'premier_league', name: 'Premier League', nameKu: 'پریمەرلیگ' },
-  { id: 'la_liga', name: 'La Liga', nameKu: 'لالیگا' },
-  { id: 'champions_league', name: 'Champions League', nameKu: 'چامپیۆنزلیگ' },
-  { id: 'serie_a', name: 'Serie A', nameKu: 'سێریا ئەی' },
+  { id: 'premier_league', name: 'Premier League', nameKu: 'پریمەرلیگ', apiCode: 'PL' },
+  { id: 'la_liga', name: 'La Liga', nameKu: 'لالیگا', apiCode: 'PD' },
+  { id: 'champions_league', name: 'Champions League', nameKu: 'چامپیۆنزلیگ', apiCode: 'CL' },
+  { id: 'serie_a', name: 'Serie A', nameKu: 'سێریا ئەی', apiCode: 'SA' },
+  { id: 'bundesliga', name: 'Bundesliga', nameKu: 'بۆندسلیگا', apiCode: 'BL1' },
   { id: 'international', name: 'International', nameKu: 'نێودەوڵەتی' }
 );
+
+export const APP_TIME_ZONE = 'Asia/Baghdad';
+
+const dateKeyFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: APP_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/** Returns the calendar date (YYYY-MM-DD) of the given instant in Asia/Baghdad. */
+export function getBaghdadDateKey(date: Date | string = new Date()): string {
+  return dateKeyFormatter.format(typeof date === 'string' ? new Date(date) : date);
+}
+
+export function isTodayInBaghdad(isoDate: string, now: Date = new Date()): boolean {
+  if (!isoDate) return false;
+  const d = new Date(isoDate);
+  if (isNaN(d.getTime())) return false;
+  return getBaghdadDateKey(d) === getBaghdadDateKey(now);
+}
 
 export type MatchStatus = 'live' | 'upcoming' | 'finished';
 

@@ -1,16 +1,43 @@
 import type { Match, MatchStatus, LeagueId, GoalScorer, MatchStats } from '@/data/matches';
-import { iraqiFallbackMatches, allFallbackMatches } from '@/data/matches';
+import {
+  iraqiFallbackMatches,
+  allFallbackMatches,
+  APP_TIME_ZONE,
+  getBaghdadDateKey,
+} from '@/data/matches';
 
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
 
-const LEAGUES: { code: string; id: LeagueId; name: string }[] = [
-  { code: 'eng.1', id: 'premier_league', name: 'Premier League' },
-  { code: 'esp.1', id: 'la_liga', name: 'La Liga' },
-  { code: 'uefa.champions', id: 'champions_league', name: 'Champions League' },
-  { code: 'ita.1', id: 'serie_a', name: 'Serie A' },
-  { code: 'fifa.world', id: 'international', name: 'FIFA World Cup' },
-  { code: 'uefa.nations', id: 'international', name: 'UEFA Nations League' },
+// `apiCode` is the standard competition code (football-data.org style);
+// `code` is the matching ESPN league slug used for the actual request.
+const LEAGUES: { apiCode: string; code: string; id: LeagueId; name: string }[] = [
+  { apiCode: 'PL', code: 'eng.1', id: 'premier_league', name: 'Premier League' },
+  { apiCode: 'PD', code: 'esp.1', id: 'la_liga', name: 'La Liga' },
+  { apiCode: 'CL', code: 'uefa.champions', id: 'champions_league', name: 'Champions League' },
+  { apiCode: 'SA', code: 'ita.1', id: 'serie_a', name: 'Serie A' },
+  { apiCode: 'BL1', code: 'ger.1', id: 'bundesliga', name: 'Bundesliga' },
+  { apiCode: 'WC', code: 'fifa.world', id: 'international', name: 'FIFA World Cup' },
+  { apiCode: 'UNL', code: 'uefa.nations', id: 'international', name: 'UEFA Nations League' },
 ];
+
+const kickoffTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: APP_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+/**
+ * ESPN's `dates` param uses its own (US) day boundaries, so a single Baghdad
+ * day can span two ESPN days. Fetch yesterday/today/tomorrow to cover it fully
+ * (and to populate the upcoming/finished tabs).
+ */
+function getEspnDateParams(now: Date = new Date()): string[] {
+  const dayMs = 24 * 60 * 60 * 1000;
+  return [-1, 0, 1].map((offset) =>
+    getBaghdadDateKey(new Date(now.getTime() + offset * dayMs)).replace(/-/g, '')
+  );
+}
 
 interface ESPNTeam {
   id: string;
@@ -98,9 +125,8 @@ function extractMinute(displayClock: string): number | undefined {
 
 function formatKickoffTime(dateStr: string): string {
   const d = new Date(dateStr);
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
+  if (isNaN(d.getTime())) return '--:--';
+  return kickoffTimeFormatter.format(d);
 }
 
 function normalizeColor(color?: string): string {
@@ -230,10 +256,11 @@ function transformEvent(event: ESPNEvent, leagueId: LeagueId, leagueName: string
 }
 
 async function fetchLeagueScoreboard(
-  code: string
+  code: string,
+  dateParam: string
 ): Promise<ESPNEvent[]> {
-  const url = `${ESPN_BASE}/${code}/scoreboard`;
-  const resp = await fetch(url);
+  const url = `${ESPN_BASE}/${code}/scoreboard?dates=${dateParam}&limit=100`;
+  const resp = await fetch(url, { cache: 'no-store' });
 
   if (!resp.ok) {
     throw new Error(`${code} ESPN ${resp.status}`);
@@ -252,19 +279,28 @@ export async function fetchMatches(): Promise<{
   let hadError = false;
   let errorMsg: string | null = null;
   const seenIds = new Set<string>();
+  const dateParams = getEspnDateParams();
 
-  for (const { code, id, name } of LEAGUES) {
-    try {
-      const events = await fetchLeagueScoreboard(code);
-      for (const event of events) {
-        const matchId = `${id}-${event.id}`;
-        if (seenIds.has(matchId)) continue;
-        seenIds.add(matchId);
-        allMatches.push(transformEvent(event, id, name));
-      }
-    } catch (err) {
+  const requests = LEAGUES.flatMap((league) =>
+    dateParams.map((dateParam) =>
+      fetchLeagueScoreboard(league.code, dateParam).then((events) => ({ league, events }))
+    )
+  );
+
+  const results = await Promise.allSettled(requests);
+
+  for (const result of results) {
+    if (result.status === 'rejected') {
       hadError = true;
-      errorMsg = err instanceof Error ? err.message : 'هەڵەیەک ڕوویدا';
+      errorMsg = result.reason instanceof Error ? result.reason.message : 'هەڵەیەک ڕوویدا';
+      continue;
+    }
+    const { league, events } = result.value;
+    for (const event of events) {
+      const matchId = `${league.id}-${event.id}`;
+      if (seenIds.has(matchId)) continue;
+      seenIds.add(matchId);
+      allMatches.push(transformEvent(event, league.id, league.name));
     }
   }
 
