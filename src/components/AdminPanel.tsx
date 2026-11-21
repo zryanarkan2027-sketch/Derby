@@ -292,38 +292,45 @@ const clickCount = data?.click_count || 0;
 const isEditing = editingId === match.id;
 const justSaved = savedId === match.id;
 return (
+                <div key={match.id} className="glass-card p-4">
+                  <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      {matchStatusBadge(match.status)}
+                      <span className="text-xs text-slatey-400 shrink-0">{match.leagueName}</span>
+                      <span className="text-sm text-white truncate">
+                        {match.homeTeam.name} vs {match.awayTeam.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="flex items-center gap-1 text-[10px] text-slatey-400 bg-bg-600/50 rounded-full px-2 py-0.5">
+                        <MousePointerClick className="w-3 h-3" />
+                        Clicks: {clickCount}
+                      </span>
+                      {hasAny && !isEditing && (
+                        <span className="flex items-center gap-1 text-[10px] text-accent-400">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          Active
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-
-
-{matchStatusBadge(match.status)}
-{match.leagueName}
-
-{match.homeTeam.name} vs {match.awayTeam.name}
-
-
-
-
-
-Clicks: {clickCount}
-
-{hasAny && !isEditing && (
-
-
-Active
-
-)}
-
-{isEditing ? (
-
-YouTube Embed URL
-<input
-type="text"
-value={editState.streamUrl}
-onChange={(e) => setEditState((s) => ({ ...s, streamUrl: e.target.value }))}
-placeholder="youtube.com..."
-className="w-full bg-bg-600 border border-white/5 rounded-lg pr-10 pl-4 py-2 text-sm text-white"
-dir="ltr"
-/>
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="flex items-center gap-1.5 text-xs text-slatey-400 mb-1.5">
+                          <Youtube className="w-3.5 h-3.5 text-live-400" />
+                          YouTube Embed URL
+                        </label>
+                        <input
+                          type="text"
+                          value={editState.streamUrl}
+                          onChange={(e) => setEditState((s) => ({ ...s, streamUrl: e.target.value }))}
+                          placeholder="https://youtube.com..."
+                          className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
+                          dir="ltr"
+                        />
+                      </div>
 
                       <div>
                         <label className="block text-xs text-slatey-400 mb-1.5">
@@ -352,55 +359,53 @@ dir="ltr"
                           dir="ltr"
                         />
                       </div>
-<button
-onClick={() => handleSave(match.id)}
-disabled={saving}
-className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium"
->
 
-Save
-
-
-Cancel
-
-
-
-) : (
-
-
-{hasYouTube && (
-
-YouTube
-
-)}
-{hasAffiliate && (
-
-{data?.platform_name || 'Affiliate'}
-
-)}
-{!hasAny && No link set}
-
-<button
-onClick={() => startEdit(match.id)}
-className="px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-xs text-white shrink-0"
->
-{justSaved ? 'Saved' : hasAny ? 'Edit' : 'Add Link'}
-
-
-)}
-
-);
-})}
-
-)}
-
-
-);
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleSave(match.id)}
+                          disabled={saving}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium"
+                        >
+                          <Save className="w-4 h-4" />
+                          Save
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="px-3 py-2 rounded-lg bg-bg-600 hover:bg-bg-500 text-slatey-300 text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <div className="flex flex-wrap gap-2 text-xs text-slatey-400 truncate">
+                        {hasYouTube && (
+                          <span className="bg-bg-600/60 px-2 py-1 rounded text-live-400">
+                            YouTube
+                          </span>
+                        )}
+                        {hasAffiliate && (
+                          <span className="bg-bg-600/60 px-2 py-1 rounded text-accent-400">
+                            {data?.platform_name || 'Affiliate'}
+                          </span>
+                        )}
+                        {!hasAny && <span>No link set</span>}
+                      </div>
+                      <button
+                        onClick={() => startEdit(match.id)}
+                        className="px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-xs text-white shrink-0"
+                      >
+                        {justSaved ? 'Saved' : hasAny ? 'Edit' : 'Add Link'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
-
-4. لە گۆشەی سەرەوەی لای ڕاست کلیک لە دوگمە سەوزەکەی **`Commit changes...`** بکە -> دواتر **`Commit changes`**.
-5. یەکسەر **Netlify** بەبێ هیچ هەڵەیەک دەبێتە سەوز (**`Live`**) و هەموو تایبەتمەندییەکان کار دەکەن!
-
-<FollowUp>
-ئەم کۆدە ڕاستەوخۆ لەناو **GitHub** (`src/components/AdminPanel.tsx`) پاشەکەوت بکە (**Commit changes**)؛ پاشان سەیری **Netlify** بکە و پێم بڵێ کاتێک بوو بە سەوز (**`Live`**)!
-</FollowUp>
