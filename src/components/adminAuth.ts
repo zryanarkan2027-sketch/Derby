@@ -1,8 +1,8 @@
 // src/data/adminAuth.ts
 // Supabase Auth (email + password) through the REST API, no extra packages needed.
 
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, '');
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_URL = 'https://oojnshatzltixdbvkheg.supabase.co';
+const ANON_KEY = 'sb_publishable_zhC3cWCxc7hOHbeD1_ZahA_34Ut2hpx';
 const STORE_KEY = 'derby_admin_session';
 
 interface Session {
