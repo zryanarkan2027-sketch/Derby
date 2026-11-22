@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { type Match } from '@/data/matches';
 import { fetchMatches } from '@/data/api';
@@ -9,12 +8,11 @@ import {
   StreamError,
   type StreamData,
 } from '@/data/streamUrls';
+import { signIn, signOut, getAccessToken } from '@/data/adminAuth';
 import {
-  Lock, Save, Search, Loader2, CheckCircle, Link2, ArrowRight,
-  AlertCircle, MousePointerClick, Youtube, ExternalLink,
+  Lock, Save, Search, Loader2, CheckCircle, ArrowRight,
+  AlertCircle, MousePointerClick, Youtube, LogOut,
 } from 'lucide-react';
-
-const ADMIN_PIN = '456564';
 
 interface EditState {
   streamUrl: string;
@@ -24,8 +22,11 @@ interface EditState {
 
 export default function AdminPanel() {
   const [authenticated, setAuthenticated] = useState(false);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loggingIn, setLoggingIn] = useState(false);
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,14 @@ export default function AdminPanel() {
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Restore an existing session on page load
+  useEffect(() => {
+    getAccessToken().then((token) => {
+      if (token) setAuthenticated(true);
+      setCheckingSession(false);
+    });
+  }, []);
 
   const loadMatches = useCallback(async () => {
     setLoading(true);
@@ -63,15 +72,26 @@ export default function AdminPanel() {
     }
   }, [authenticated, loadMatches]);
 
-  const handlePinSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput === ADMIN_PIN) {
+    setLoggingIn(true);
+    setLoginError(null);
+    try {
+      await signIn(emailInput, passwordInput);
+      setPasswordInput('');
       setAuthenticated(true);
-      setPinError(false);
-    } else {
-      setPinError(true);
-      setPinInput('');
+    } catch {
+      setLoginError('Invalid email or password');
+      setPasswordInput('');
     }
+    setLoggingIn(false);
+  };
+
+  const handleLogout = () => {
+    signOut();
+    setAuthenticated(false);
+    setMatches([]);
+    setStreamDataMap({});
   };
 
   const handleSave = async (matchId: string) => {
@@ -125,6 +145,14 @@ export default function AdminPanel() {
     window.location.href = '/';
   };
 
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-bg-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
+      </div>
+    );
+  }
+
   if (!authenticated) {
     return (
       <div className="min-h-screen bg-bg-900 flex items-center justify-center px-4">
@@ -135,34 +163,47 @@ export default function AdminPanel() {
             </div>
             <div className="text-center">
               <h1 className="text-xl font-bold text-white">Derby Admin</h1>
-              <p className="text-xs text-slatey-400 mt-1">Enter PIN Code</p>
+              <p className="text-xs text-slatey-400 mt-1">Sign in</p>
             </div>
           </div>
 
-          <form onSubmit={handlePinSubmit} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-3">
+            <input
+              type="email"
+              autoComplete="username"
+              value={emailInput}
+              onChange={(e) => {
+                setEmailInput(e.target.value);
+                setLoginError(null);
+              }}
+              placeholder="Email"
+              autoFocus
+              dir="ltr"
+              className="w-full bg-bg-600 border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slatey-600 focus:outline-none focus:border-accent-500/50 transition-colors"
+            />
             <input
               type="password"
-              inputMode="numeric"
-              value={pinInput}
+              autoComplete="current-password"
+              value={passwordInput}
               onChange={(e) => {
-                setPinInput(e.target.value);
-                setPinError(false);
+                setPasswordInput(e.target.value);
+                setLoginError(null);
               }}
-              placeholder="• • • •"
-              maxLength={6}
-              autoFocus
-              className={`w-full text-center text-2xl tracking-[0.5em] bg-bg-600 border rounded-xl py-3 text-white placeholder:text-slatey-600 focus:outline-none transition-colors ${
-                pinError ? 'border-live-500' : 'border-white/5 focus:border-accent-500/50'
+              placeholder="Password"
+              dir="ltr"
+              className={`w-full bg-bg-600 border rounded-xl px-4 py-3 text-sm text-white placeholder:text-slatey-600 focus:outline-none transition-colors ${
+                loginError ? 'border-live-500' : 'border-white/5 focus:border-accent-500/50'
               }`}
             />
-            {pinError && (
-              <p className="text-xs text-live-400 text-center">Invalid PIN</p>
+            {loginError && (
+              <p className="text-xs text-live-400 text-center">{loginError}</p>
             )}
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-bold text-sm transition-colors"
+              disabled={loggingIn || !emailInput || !passwordInput}
+              className="w-full py-3 rounded-xl bg-accent-500 hover:bg-accent-600 disabled:opacity-50 text-white font-bold text-sm transition-colors"
             >
-              Login
+              {loggingIn ? 'Signing in...' : 'Login'}
             </button>
           </form>
 
@@ -211,13 +252,22 @@ export default function AdminPanel() {
                 <span className="text-accent-400 text-[10px]">Admin Panel</span>
               </div>
             </div>
-            <button
-              onClick={goHome}
-              className="flex items-center gap-1.5 text-xs text-slatey-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/5 transition-colors"
-            >
-              <ArrowRight className="w-4 h-4" />
-              Back
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 text-xs text-slatey-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+              <button
+                onClick={goHome}
+                className="flex items-center gap-1.5 text-xs text-slatey-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                <ArrowRight className="w-4 h-4" />
+                Back
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -259,6 +309,7 @@ export default function AdminPanel() {
             </div>
           </div>
         )}
+
         <div className="glass-card p-4 mb-5 border border-live-500/30">
           <div className="flex items-center justify-between gap-3 mb-2">
             <div className="flex items-center gap-2">
@@ -315,27 +366,26 @@ export default function AdminPanel() {
           />
         </div>
 
-               {loading ? (
+        {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
             <p className="text-slatey-400 text-sm">Loading matches...</p>
           </div>
-             ) : filtered.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="glass-card p-12 text-center">
             <p className="text-slatey-400">No matches found</p>
           </div>
-               ) : (
+        ) : (
           <div className="space-y-2">
             {filtered.map((match) => {
-
-const data = streamDataMap[match.id];
-const hasYouTube = !!data?.stream_url && data.stream_url.length > 0;
-const hasAffiliate = !!data?.affiliate_url && data.affiliate_url.length > 0;
-const hasAny = hasYouTube || hasAffiliate;
-const clickCount = data?.click_count || 0;
-const isEditing = editingId === match.id;
-const justSaved = savedId === match.id;
-return (
+              const data = streamDataMap[match.id];
+              const hasYouTube = !!data?.stream_url && data.stream_url.length > 0;
+              const hasAffiliate = !!data?.affiliate_url && data.affiliate_url.length > 0;
+              const hasAny = hasYouTube || hasAffiliate;
+              const clickCount = data?.click_count || 0;
+              const isEditing = editingId === match.id;
+              const justSaved = savedId === match.id;
+              return (
                 <div key={match.id} className="glass-card p-4">
                   <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
