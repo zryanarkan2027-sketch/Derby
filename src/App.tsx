@@ -9,7 +9,7 @@ import MatchList from '@/components/MatchList';
 import ResultsTicker from '@/components/ResultsTicker';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
-import InfoPage, { SiteFooter, type InfoPageId } from '@/components/InfoPages';
+import InfoPage, { SiteFooter, type InfoPageId } from '@/InfoPages';
 import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
 
 const INFO_ROUTES: Record<string, InfoPageId> = {
