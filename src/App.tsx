@@ -9,14 +9,26 @@ import MatchList from '@/components/MatchList';
 import ResultsTicker from '@/components/ResultsTicker';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
+import InfoPage, { SiteFooter, type InfoPageId } from '@/components/InfoPages';
+import AdSlot from '@/components/AdSlot';
 import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
 
+const INFO_ROUTES: Record<string, InfoPageId> = {
+  '/about': 'about',
+  '/privacy': 'privacy',
+  '/contact': 'contact',
+};
+
 export default function App() {
-  const path = window.location.pathname;
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
   const hash = window.location.hash;
   const search = window.location.search;
   if (path === '/admin' || hash === '#admin' || search.includes('admin')) {
     return <AdminPanel />;
+  }
+  const infoPage = INFO_ROUTES[path];
+  if (infoPage) {
+    return <InfoPage page={infoPage} />;
   }
   return <MainApp />;
 }
@@ -129,7 +141,10 @@ function MainApp() {
           searchQuery={searchQuery}
         />
         <MatchDetails match={selectedMatch} onBack={handleBack} />
-        <Footer />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AdSlot name="bottom" />
+        </div>
+        <SiteFooter />
       </div>
     );
   }
@@ -178,6 +193,9 @@ function MainApp() {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Ad: under the ticker (never on top of the video) */}
+        <AdSlot name="top" />
+
         {/* 24/7 beIN SPORTS NEWS Live Box */}
         <div className="glass-card overflow-hidden mb-6 border border-white/10">
           <div className="flex items-center justify-between px-4 py-3 bg-bg-800/80 border-b border-white/5">
@@ -197,6 +215,7 @@ function MainApp() {
               src={beinNewsUrl}
               title="beIN SPORTS NEWS Live"
               className="w-full h-full border-0"
+              loading="lazy"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
@@ -249,32 +268,12 @@ function MainApp() {
             </div>
           </>
         )}
+
+        {/* Ad: after the match list */}
+        <AdSlot name="bottom" />
       </main>
 
-      <Footer />
+      <SiteFooter />
     </div>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="mt-12 border-t border-white/5 bg-bg-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">DB</span>
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-white font-bold text-sm">Derby</span>
-              <span className="text-accent-400 text-[10px]">derby-live</span>
-            </div>
-          </div>
-          <p className="text-xs text-slatey-500 text-center">
-            © ٢٠٢٦ Derby — ئەنجامی ڕاستەوخۆ و پەخشی وەرزشی
-          </p>
-        </div>
-      </div>
-    </footer>
   );
 }
