@@ -1,3 +1,5 @@
+import { getAccessToken } from '@/data/adminAuth';
+
 const SUPABASE_URL = 'https://oojnshatzltixdbvkheg.supabase.co/rest/v1';
 const SUPABASE_ANON_KEY = 'sb_publishable_zhC3cWCxc7hOHbeD1_ZahA_34Ut2hpx';
 
@@ -39,17 +41,33 @@ export function convertToEmbedUrl(input: string): string {
   return trimmed.replace(/['"`<>]/g, '').trim();
 }
 
+interface FetchOptions extends RequestInit {
+  /** When true, the request is sent with the signed-in admin's token. */
+  admin?: boolean;
+}
+
 async function supabaseFetch(
   path: string,
-  options: RequestInit = {}
+  options: FetchOptions = {}
 ): Promise<Response> {
+  const { admin, ...init } = options;
+
+  let bearer = SUPABASE_ANON_KEY;
+  if (admin) {
+    const token = await getAccessToken();
+    if (!token) {
+      throw new StreamError('Not signed in. Please log in again.', 401);
+    }
+    bearer = token;
+  }
+
   const headers: Record<string, string> = {
     apikey: SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    ...((options.headers as Record<string, string>) || {}),
+    Authorization: `Bearer ${bearer}`,
+    ...((init.headers as Record<string, string>) || {}),
   };
 
-  const resp = await fetch(`${SUPABASE_URL}${path}`, { ...options, headers });
+  const resp = await fetch(`${SUPABASE_URL}${path}`, { ...init, headers });
 
   if (!resp.ok) {
     let detail = '';
@@ -103,6 +121,7 @@ export interface StreamUpdate {
   platform_name: string;
 }
 
+// Admin only (requires a signed-in session)
 export async function setStreamData(
   matchId: string,
   data: StreamUpdate
@@ -116,13 +135,14 @@ export async function setStreamData(
   if (!hasAny && platformName.length === 0) {
     await supabaseFetch(
       `/match_streams?match_id=eq.${encodeURIComponent(matchId)}`,
-      { method: 'DELETE' }
+      { method: 'DELETE', admin: true }
     );
     return;
   }
 
   await supabaseFetch('/match_streams', {
     method: 'POST',
+    admin: true,
     headers: {
       'Content-Type': 'application/json',
       Prefer: 'resolution=merge-duplicates,return=minimal',
@@ -137,22 +157,15 @@ export async function setStreamData(
   });
 }
 
+// Public counters go through SQL functions (bump_click / bump_site_stats),
+// so visitors never get direct write access to the table.
 export async function incrementClickCount(matchId: string): Promise<void> {
   try {
-    const resp = await supabaseFetch(
-      `/match_streams?match_id=eq.${encodeURIComponent(matchId)}&select=click_count`
-    );
-    const rows: StreamRow[] = await resp.json();
-    const current = rows.length > 0 ? (rows[0].click_count || 0) : 0;
-
-    await supabaseFetch(
-      `/match_streams?match_id=eq.${encodeURIComponent(matchId)}`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ click_count: current + 1 }),
-      }
-    );
+    await supabaseFetch('/rpc/bump_click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_match_id: matchId }),
+    });
   } catch (err) {
     console.error('Failed to increment click count:', err);
   }
@@ -163,26 +176,10 @@ export async function recordSiteVisit(): Promise<void> {
     if (typeof window !== 'undefined' && sessionStorage.getItem('derby_visited')) {
       return;
     }
-    const resp = await supabaseFetch(
-      '/match_streams?match_id=eq.__SITE_STATS__&select=click_count'
-    );
-    const rows: StreamRow[] = await resp.json();
-    const current = rows.length > 0 ? (rows[0].click_count || 0) : 0;
-
-    await supabaseFetch('/match_streams', {
+    await supabaseFetch('/rpc/bump_site_stats', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal',
-      },
-      body: JSON.stringify({
-        match_id: '__SITE_STATS__',
-        stream_url: '',
-        affiliate_url: '',
-        platform_name: 'SITE_VISITS',
-        click_count: current + 1,
-        updated_at: new Date().toISOString(),
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
     });
 
     if (typeof window !== 'undefined') {
