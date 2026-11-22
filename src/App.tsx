@@ -10,7 +10,6 @@ import ResultsTicker from '@/components/ResultsTicker';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
 import InfoPage, { SiteFooter, type InfoPageId } from '@/components/InfoPages';
-import AdSlot from '@/components/AdSlot';
 import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
 
 const INFO_ROUTES: Record<string, InfoPageId> = {
@@ -141,9 +140,6 @@ function MainApp() {
           searchQuery={searchQuery}
         />
         <MatchDetails match={selectedMatch} onBack={handleBack} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AdSlot name="bottom" />
-        </div>
         <SiteFooter />
       </div>
     );
@@ -193,9 +189,6 @@ function MainApp() {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Ad: under the ticker (never on top of the video) */}
-        <AdSlot name="top" />
-
         {/* 24/7 beIN SPORTS NEWS Live Box */}
         <div className="glass-card overflow-hidden mb-6 border border-white/10">
           <div className="flex items-center justify-between px-4 py-3 bg-bg-800/80 border-b border-white/5">
@@ -268,9 +261,6 @@ function MainApp() {
             </div>
           </>
         )}
-
-        {/* Ad: after the match list */}
-        <AdSlot name="bottom" />
       </main>
 
       <SiteFooter />
