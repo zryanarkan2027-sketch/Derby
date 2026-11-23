@@ -1,6 +1,7 @@
-import { ArrowRight, Calendar, Trophy, Users, BarChart3, Info, Shield, Tv, MapPin, CloudSun, User, ExternalLink, PlayCircle } from 'lucide-react';
+import { ArrowRight, Calendar, Trophy, Users, BarChart3, Info, ExternalLink, PlayCircle } from 'lucide-react';
 import { useState } from 'react';
 import type { Match } from '@/data/matches';
+import type { StreamLink } from '@/data/streamUrls';
 import TeamLogo from './TeamLogo';
 import VideoPlayer from './VideoPlayer';
 import { incrementClickCount } from '@/data/streamUrls';
@@ -8,8 +9,10 @@ import LineupsTab from './tabs/LineupsTab';
 import StatsTab from './tabs/StatsTab';
 import MatchInfoTab from './tabs/MatchInfoTab';
 
+type MatchWithStreams = Match & { streams?: StreamLink[] };
+
 interface MatchDetailsProps {
-  match: Match;
+  match: MatchWithStreams;
   onBack: () => void;
 }
 
@@ -107,10 +110,21 @@ export default function MatchDetails({ match, onBack }: MatchDetailsProps) {
         </div>
       </div>
 
-      {/* Video Player */}
+      {/* Video Player (several links, click-to-play) */}
       <VideoPlayer
+        key={match.id}
         streamUrl={match.streamUrl}
+        streams={match.streams}
         matchTitle={`${match.homeTeam.name} vs ${match.awayTeam.name}`}
+        homeName={match.homeTeam.name}
+        awayName={match.awayTeam.name}
+        homeLogo={<TeamLogo team={match.homeTeam} size={56} />}
+        awayLogo={<TeamLogo team={match.awayTeam} size={56} />}
+        timeLabel={
+          isLive || isFinished
+            ? `${match.homeScore} - ${match.awayScore}`
+            : match.kickoffTime
+        }
       />
 
       {/* Official Affiliate Watch Button */}
@@ -124,12 +138,12 @@ export default function MatchDetails({ match, onBack }: MatchDetailsProps) {
             className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-accent-500 via-accent-400 to-warning-400 px-6 py-4 shadow-lg shadow-accent-500/20 transition-all hover:shadow-accent-500/40 hover:scale-[1.01] active:scale-[0.99]"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-            <div className="relative flex items-center justify-center gap-3">
-              <PlayCircle className="w-6 h-6 text-white shrink-0" />
-              <span className="text-white font-bold text-sm sm:text-base text-center leading-tight">
+            <div className="relative flex items-center justify-center gap-3 text-bg-900">
+              <PlayCircle className="w-6 h-6 shrink-0" />
+              <span className="font-bold text-sm sm:text-base text-center leading-tight">
                 سەیرکردنی ڕاستەوخۆ بە کوالێتی HD لەسەر {match.platformName || 'پلاتفۆرمی فەرمی'}
               </span>
-              <ExternalLink className="w-4 h-4 text-white/80 shrink-0" />
+              <ExternalLink className="w-4 h-4 opacity-80 shrink-0" />
             </div>
           </button>
         </div>
