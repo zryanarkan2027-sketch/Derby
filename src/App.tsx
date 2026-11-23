@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { type Match, type LeagueFilter, isTodayInBaghdad } from '@/data/matches';
 import { fetchMatches } from '@/data/api';
 import { getStreamData, recordSiteVisit, type StreamLink } from '@/data/streamUrls';
@@ -9,6 +9,13 @@ import MatchList from '@/components/MatchList';
 import ResultsTicker from '@/components/ResultsTicker';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
+import {
+  isSoundEnabled,
+  setSoundEnabled,
+  unlockAudio,
+  armAudioUnlock,
+  playGoal,
+} from '@/data/goalSound';
 import InfoPage, { SiteFooter, type InfoPageId } from '@/components/InfoPages';
 import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
 
@@ -52,6 +59,53 @@ function MainApp() {
   const [beinNewsUrl, setBeinNewsUrl] = useState<string>(
     'https://youtube.com'
   );
+
+  // ---- Goal sound + goal toast ----
+  const [soundOn, setSoundOn] = useState<boolean>(() => isSoundEnabled());
+  const [goalToast, setGoalToast] = useState<{ team: string; line: string } | null>(null);
+  const prevScores = useRef<Map<string, { h: number; a: number }>>(new Map());
+  const toastTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    armAudioUnlock();
+  }, []);
+
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+    if (next) {
+      unlockAudio();
+      playGoal(); // short demo so the visitor hears what it sounds like
+    }
+  };
+
+  useEffect(() => {
+    const prev = prevScores.current;
+    const next = new Map<string, { h: number; a: number }>();
+    const goals: { team: string; line: string }[] = [];
+
+    for (const m of matches) {
+      const h = Number(m.homeScore) || 0;
+      const aw = Number(m.awayScore) || 0;
+      next.set(m.id, { h, a: aw });
+      if (m.status !== 'live') continue;
+      const p = prev.get(m.id);
+      if (!p) continue; // first time we see this match: not a new goal
+      const line = `${m.homeTeam.name} ${h} - ${aw} ${m.awayTeam.name}`;
+      if (h > p.h) goals.push({ team: m.homeTeam.name, line });
+      if (aw > p.a) goals.push({ team: m.awayTeam.name, line });
+    }
+
+    const firstLoad = prev.size === 0;
+    prevScores.current = next;
+    if (firstLoad || goals.length === 0) return;
+
+    playGoal();
+    setGoalToast(goals[0]);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setGoalToast(null), 7000);
+  }, [matches]);
 
   useEffect(() => {
     getStreamData('__BEIN_NEWS__')
@@ -135,10 +189,36 @@ function MainApp() {
   if (selectedMatch) {
     return (
       <div className="min-h-screen bg-bg-900">
+      {goalToast && (
+        <div
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-md animate-fade-in"
+          role="status"
+        >
+          <div className="glass-card border-accent-500/40 px-4 py-3 flex items-center gap-3 shadow-2xl accent-glow">
+            <span className="text-2xl">⚽</span>
+            <div className="min-w-0">
+              <p className="text-accent-400 font-bold text-sm">گۆڵ! {goalToast.team}</p>
+              <p className="text-white text-sm truncate" dir="ltr">
+                {goalToast.line}
+              </p>
+            </div>
+            <button
+              onClick={() => setGoalToast(null)}
+              className="ms-auto text-slatey-400 hover:text-white text-xs shrink-0"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
         <Header
           onNavigate={handleNavigate}
           onSearch={setSearchQuery}
           searchQuery={searchQuery}
+          soundOn={soundOn}
+          onToggleSound={toggleSound}
         />
         <MatchDetails match={selectedMatch} onBack={handleBack} />
         <SiteFooter />
@@ -148,10 +228,36 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-bg-900">
+      {goalToast && (
+        <div
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-md animate-fade-in"
+          role="status"
+        >
+          <div className="glass-card border-accent-500/40 px-4 py-3 flex items-center gap-3 shadow-2xl accent-glow">
+            <span className="text-2xl">⚽</span>
+            <div className="min-w-0">
+              <p className="text-accent-400 font-bold text-sm">گۆڵ! {goalToast.team}</p>
+              <p className="text-white text-sm truncate" dir="ltr">
+                {goalToast.line}
+              </p>
+            </div>
+            <button
+              onClick={() => setGoalToast(null)}
+              className="ms-auto text-slatey-400 hover:text-white text-xs shrink-0"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       <Header
         onNavigate={handleNavigate}
         onSearch={setSearchQuery}
         searchQuery={searchQuery}
+          soundOn={soundOn}
+          onToggleSound={toggleSound}
       />
 
       {/* Hero banner */}
