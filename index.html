@@ -1,128 +1,80 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+<!doctype html>
+<html lang="ckb" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0B1220" />
 
-@layer base {
-  * {
-    box-sizing: border-box;
-  }
+    <!-- Verification (do not remove) -->
+    <meta name="google-site-verification" content="ppMhqKBf-VlzpAkJFFb9sB7KTvriS71nf7U_X2ELAPo" />
+    <meta name="mitgo-verification" content="0a1babfc-8ef1-4939-b206-e07142495a22" />
 
-  body {
-    @apply bg-bg-900 text-slate-200 font-sans antialiased;
-    margin: 0;
-    min-height: 100vh;
-  }
+    <!-- Icons -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/derby-icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/derby-icon-180.png" />
 
-  /* Custom scrollbar - thin dark theme */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-bg-800;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-slatey-600 rounded-full;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slatey-500;
-  }
+    <!-- SEO -->
+    <title>Derby | ئەنجامی ڕاستەوخۆ و پەخشی فەرمی یارییەکان</title>
+    <meta
+      name="description"
+      content="Derby - ئەنجامی ڕاستەوخۆی یارییەکانی پریمەرلیگ، لالیگا، بوندسلیگا، سێریا ئەی و خولە گەورەکان، لەگەڵ خشتە، ئامار و پەخشی فەرمی."
+    />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://derby-gamma.vercel.app/" />
 
-  /* Hide scrollbar for league filter pills */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-}
+    <!-- Open Graph / Twitter -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Derby" />
+    <meta property="og:locale" content="ckb_IQ" />
+    <meta property="og:url" content="https://derby-gamma.vercel.app/" />
+    <meta property="og:title" content="Derby | ئەنجامی ڕاستەوخۆ و پەخشی فەرمی" />
+    <meta
+      property="og:description"
+      content="ئەنجامی ڕاستەوخۆی یارییەکان، خشتەی خولەکان و پەخشی فەرمی لە یەک شوێندا."
+    />
+    <meta property="og:image" content="https://derby-gamma.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Derby | ئەنجامی ڕاستەوخۆ و پەخشی فەرمی" />
+    <meta
+      name="twitter:description"
+      content="ئەنجامی ڕاستەوخۆی یارییەکان، خشتەی خولەکان و پەخشی فەرمی لە یەک شوێندا."
+    />
+    <meta name="twitter:image" content="https://derby-gamma.vercel.app/og.png" />
 
-@layer components {
-  .glass-card {
-    @apply bg-bg-700/80 backdrop-blur-sm border border-white/5 rounded-xl;
-  }
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Derby",
+        "url": "https://derby-gamma.vercel.app/",
+        "inLanguage": "ckb",
+        "image": "https://derby-gamma.vercel.app/derby-icon-512.png",
+        "description": "ئەنجامی ڕاستەوخۆی یارییەکان و پەخشی فەرمی"
+      }
+    </script>
 
-  /* Soft lime glow (Derby brand colour) */
-  .accent-glow {
-    box-shadow: 0 0 24px rgba(198, 244, 50, 0.18);
-  }
-
-  .live-glow {
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
-  }
-
-  /* Moves content left -> right; the track holds two identical copies for a seamless loop */
-  @keyframes ticker-ltr {
-    from {
-      transform: translate3d(-50%, 0, 0);
-    }
-    to {
-      transform: translate3d(0, 0, 0);
-    }
-  }
-
-  .ticker-track {
-    animation: ticker-ltr var(--ticker-duration, 60s) linear infinite;
-    will-change: transform;
-  }
-
-  .ticker-viewport:hover .ticker-track,
-  .ticker-viewport:focus-within .ticker-track {
-    animation-play-state: paused;
-  }
-
-  .ticker-fade {
-    mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .ticker-track {
-      animation-play-state: paused;
-    }
-  }
-}
-
-/*
- * Derby lime accent: white text is unreadable on bright lime,
- * so ANY solid lime surface (normal, hover, group-hover, active, focus)
- * uses the logo's dark navy for its text and icons.
- * (Kept outside @layer on purpose so it is always included.)
- */
-.bg-accent-400,
-.bg-accent-500,
-.bg-accent-600,
-[class*="from-accent-"] {
-  color: #0B1220;
-}
-.bg-accent-400 *,
-.bg-accent-500 *,
-.bg-accent-600 *,
-[class*="from-accent-"] * {
-  color: inherit;
-}
-
-/* Hover / pressed / focus states that turn an element lime */
-.hover\:bg-accent-400:hover,
-.hover\:bg-accent-500:hover,
-.hover\:bg-accent-600:hover,
-.active\:bg-accent-500:active,
-.active\:bg-accent-600:active,
-.focus\:bg-accent-500:focus,
-.group:hover .group-hover\:bg-accent-400,
-.group:hover .group-hover\:bg-accent-500,
-.group:hover .group-hover\:bg-accent-600 {
-  color: #0B1220 !important;
-}
-.hover\:bg-accent-400:hover *,
-.hover\:bg-accent-500:hover *,
-.hover\:bg-accent-600:hover *,
-.active\:bg-accent-500:active *,
-.active\:bg-accent-600:active *,
-.focus\:bg-accent-500:focus *,
-.group:hover .group-hover\:bg-accent-400 *,
-.group:hover .group-hover\:bg-accent-500 *,
-.group:hover .group-hover\:bg-accent-600 * {
-  color: inherit !important;
-}
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- This text is shown to search engines before JavaScript runs; React replaces it once the app loads. -->
+    <div id="root">
+      <h1>Derby | ئەنجامی ڕاستەوخۆ و پەخشی فەرمی</h1>
+      <p>
+        ئەنجامی ڕاستەوخۆی یارییەکانی پریمەرلیگ، لالیگا، بوندسلیگا، سێریا ئەی، لیگ ١ و خولی
+        پاڵەوانانی ئەوروپا، لەگەڵ خشتەی خولەکان و پەخشی فەرمی.
+      </p>
+    </div>
+    <noscript>بۆ بینینی ئەنجامی ڕاستەوخۆ، JavaScript چالاک بکە.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
