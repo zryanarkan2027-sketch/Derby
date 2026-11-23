@@ -1,8 +1,14 @@
-// Goal sound for Derby. The sound is synthesised with the Web Audio API,
-// so there are no audio files to load or license.
+// Derby sound: an optional, original fanfare on Champions League days.
+// Everything is synthesised with the Web Audio API (no files, no licensing).
+// If you add your OWN licensed file at  public/sounds/champions-day.mp3
+// the site plays that instead of the built-in fanfare.
 
 const KEY = 'derby_sound';
+const CL_KEY = 'derby_cl_played';
+const CUSTOM_FILE = '/sounds/champions-day.mp3';
+
 let ctx: AudioContext | null = null;
+let clArmed = false;
 
 export function isSoundEnabled(): boolean {
   try {
@@ -40,10 +46,7 @@ export function unlockAudio(): void {
   getCtx();
 }
 
-/**
- * If the visitor turned sound on in an earlier visit, the browser still needs
- * one tap/click on this page before it allows audio. Arm a one-time listener.
- */
+/** If sound was enabled on an earlier visit, one tap on this page is still required by the browser. */
 export function armAudioUnlock(): void {
   if (typeof window === 'undefined') return;
   const unlock = () => {
@@ -55,57 +58,144 @@ export function armAudioUnlock(): void {
   window.addEventListener('keydown', unlock);
 }
 
-/** Short chime + crowd swell, about 2.8 seconds. */
-export function playGoal(): void {
+/** Soft two-note chime, used as a confirmation when the visitor turns sound on. */
+export function playChime(): void {
   if (!isSoundEnabled()) return;
   const c = getCtx();
   if (!c) return;
-
   const t0 = c.currentTime + 0.02;
   const master = c.createGain();
-  master.gain.value = 0.5;
+  master.gain.value = 0.3;
   master.connect(c.destination);
-
-  // Crowd: filtered noise that swells and fades
-  const length = Math.floor(c.sampleRate * 2.8);
-  const buffer = c.createBuffer(1, length, c.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
-
-  const noise = c.createBufferSource();
-  noise.buffer = buffer;
-
-  const band = c.createBiquadFilter();
-  band.type = 'bandpass';
-  band.Q.value = 0.6;
-  band.frequency.setValueAtTime(500, t0);
-  band.frequency.linearRampToValueAtTime(1200, t0 + 0.9);
-
-  const crowd = c.createGain();
-  crowd.gain.setValueAtTime(0.0001, t0);
-  crowd.gain.linearRampToValueAtTime(0.45, t0 + 0.5);
-  crowd.gain.setValueAtTime(0.45, t0 + 1.4);
-  crowd.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.8);
-
-  noise.connect(band);
-  band.connect(crowd);
-  crowd.connect(master);
-  noise.start(t0);
-  noise.stop(t0 + 2.8);
-
-  // Chime: fast rising arpeggio (C5 E5 G5 C6)
-  [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+  [659.25, 880].forEach((freq, i) => {
     const osc = c.createOscillator();
-    osc.type = 'triangle';
+    osc.type = 'sine';
     osc.frequency.value = freq;
     const gain = c.createGain();
-    const start = t0 + i * 0.13;
+    const start = t0 + i * 0.16;
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.35, start + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.9);
+    gain.gain.exponentialRampToValueAtTime(0.4, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.8);
     osc.connect(gain);
     gain.connect(master);
     osc.start(start);
-    osc.stop(start + 1);
+    osc.stop(start + 0.9);
   });
+}
+
+/** Original fanfare (about 3.5 s): rising brass-like chords and timpani. */
+function playFanfareSynth(c: AudioContext): void {
+  const t0 = c.currentTime + 0.05;
+  const master = c.createGain();
+  master.gain.value = 0.35;
+  master.connect(c.destination);
+
+  const chord = (freqs: number[], start: number, dur: number, vol: number) => {
+    freqs.forEach((f) => {
+      const osc = c.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = f;
+      const lp = c.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(900, t0 + start);
+      lp.frequency.linearRampToValueAtTime(2200, t0 + start + 0.15);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t0 + start);
+      g.gain.linearRampToValueAtTime(vol, t0 + start + 0.06);
+      g.gain.setValueAtTime(vol, t0 + start + Math.max(dur - 0.15, 0.1));
+      g.gain.linearRampToValueAtTime(0.0001, t0 + start + dur);
+      osc.connect(lp);
+      lp.connect(g);
+      g.connect(master);
+      osc.start(t0 + start);
+      osc.stop(t0 + start + dur + 0.05);
+    });
+  };
+
+  const timpani = (start: number) => {
+    const osc = c.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110, t0 + start);
+    osc.frequency.exponentialRampToValueAtTime(55, t0 + start + 0.4);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t0 + start);
+    g.gain.exponentialRampToValueAtTime(0.9, t0 + start + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + start + 0.9);
+    osc.connect(g);
+    g.connect(master);
+    osc.start(t0 + start);
+    osc.stop(t0 + start + 1);
+  };
+
+  timpani(0);
+  chord([261.63, 329.63, 392.0], 0, 0.45, 0.12);
+  chord([349.23, 440.0, 523.25], 0.5, 0.45, 0.12);
+  chord([392.0, 493.88, 587.33], 1.0, 0.45, 0.12);
+  timpani(1.5);
+  chord([523.25, 659.25, 783.99, 1046.5], 1.5, 1.9, 0.14);
+}
+
+async function playCustomOrFanfare(): Promise<void> {
+  try {
+    const audio = new Audio(CUSTOM_FILE);
+    audio.volume = 0.7;
+    await audio.play(); // rejects if the file does not exist
+    return;
+  } catch {
+    /* fall back to the built-in fanfare */
+  }
+  const c = getCtx();
+  if (c) playFanfareSynth(c);
+}
+
+function todayKey(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Baghdad' }).format(new Date());
+}
+
+function alreadyPlayedToday(): boolean {
+  try {
+    return localStorage.getItem(CL_KEY) === todayKey();
+  } catch {
+    return false;
+  }
+}
+
+function markPlayed(): void {
+  try {
+    localStorage.setItem(CL_KEY, todayKey());
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * On a Champions League day: play the fanfare ONCE per day, after the
+ * visitor's first tap/click (browsers do not allow sound before that).
+ */
+export function playChampionsDayMusicOnce(): void {
+  if (typeof window === 'undefined') return;
+  if (!isSoundEnabled() || alreadyPlayedToday() || clArmed) return;
+
+  const run = () => {
+    if (!isSoundEnabled() || alreadyPlayedToday()) return;
+    getCtx();
+    markPlayed();
+    void playCustomOrFanfare();
+  };
+
+  const c = getCtx();
+  if (c && c.state === 'running') {
+    run();
+    return;
+  }
+
+  clArmed = true;
+  const onGesture = () => {
+    window.removeEventListener('pointerdown', onGesture);
+    window.removeEventListener('keydown', onGesture);
+    clArmed = false;
+    run();
+  };
+  window.addEventListener('pointerdown', onGesture);
+  window.addEventListener('keydown', onGesture);
 }
