@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { type Match, type LeagueFilter, isTodayInBaghdad } from '@/data/matches';
 import { fetchMatches } from '@/data/api';
-import { getStreamData, recordSiteVisit } from '@/data/streamUrls';
+import { getStreamData, recordSiteVisit, type StreamLink } from '@/data/streamUrls';
 import Header from '@/components/Header';
 import FilterTabs, { type FilterTab } from '@/components/FilterTabs';
 import LeagueFilterBar from '@/components/LeagueFilterBar';
@@ -43,7 +43,7 @@ function MainApp() {
   const [filterTab, setFilterTab] = useState<FilterTab>('today');
   const [leagueFilter, setLeagueFilter] = useState<LeagueFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<(Match & { streams?: StreamLink[] }) | null>(null);
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,6 +109,7 @@ function MainApp() {
                 affiliateUrl: data.affiliate_url || undefined,
                 platformName: data.platform_name || undefined,
                 clickCount: data.click_count,
+                streams: data.streams,
               }
             : prev
         );
