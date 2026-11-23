@@ -12,14 +12,22 @@ import { signIn, signOut, getAccessToken } from '@/data/adminAuth';
 import Logo from '@/components/Logo';
 import {
   Lock, Save, Search, Loader2, CheckCircle, ArrowRight,
-  AlertCircle, MousePointerClick, Youtube, LogOut,
+  AlertCircle, MousePointerClick, Youtube, LogOut, Plus, Trash2,
 } from 'lucide-react';
 
+interface LinkRow {
+  name: string;
+  url: string;
+}
+
 interface EditState {
-  streamUrl: string;
+  links: LinkRow[];
   affiliateUrl: string;
   platformName: string;
 }
+
+const MAX_LINKS = 6;
+const EMPTY_LINK: LinkRow = { name: '', url: '' };
 
 export default function AdminPanel() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -34,7 +42,7 @@ export default function AdminPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [streamDataMap, setStreamDataMap] = useState<Record<string, StreamData>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editState, setEditState] = useState<EditState>({ streamUrl: '', affiliateUrl: '', platformName: '' });
+  const [editState, setEditState] = useState<EditState>({ links: [{ ...EMPTY_LINK }], affiliateUrl: '', platformName: '' });
   const [savedId, setSavedId] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
@@ -98,17 +106,29 @@ export default function AdminPanel() {
   const handleSave = async (matchId: string) => {
     setSaving(true);
     setSaveError(null);
-    const embedUrl = convertToEmbedUrl(editState.streamUrl);
+
+    const streams = editState.links
+      .map((l) => ({ name: l.name.trim(), url: convertToEmbedUrl(l.url) }))
+      .filter((l) => l.url.length > 0)
+      .map((l, i) => ({ name: l.name || `لینکی ${i + 1}`, url: l.url }));
+
+    if (streams.some((l) => !/^https?:\/\//i.test(l.url))) {
+      setSaveError('Every link must start with https://');
+      setSaving(false);
+      return;
+    }
+
     try {
       await setStreamData(matchId, {
-        stream_url: embedUrl,
+        streams,
         affiliate_url: editState.affiliateUrl,
         platform_name: editState.platformName,
       });
       setStreamDataMap((prev) => ({
         ...prev,
         [matchId]: {
-          stream_url: embedUrl,
+          stream_url: streams[0]?.url ?? '',
+          streams,
           affiliate_url: editState.affiliateUrl.trim(),
           platform_name: editState.platformName.trim(),
           click_count: prev[matchId]?.click_count || 0,
@@ -129,9 +149,15 @@ export default function AdminPanel() {
 
   const startEdit = (matchId: string) => {
     const existing = streamDataMap[matchId];
+    const links: LinkRow[] =
+      existing?.streams && existing.streams.length > 0
+        ? existing.streams.map((s) => ({ name: s.name, url: s.url }))
+        : existing?.stream_url
+          ? [{ name: 'لینکی ١', url: existing.stream_url }]
+          : [{ ...EMPTY_LINK }];
     setEditingId(matchId);
     setEditState({
-      streamUrl: '',
+      links,
       affiliateUrl: existing?.affiliate_url || '',
       platformName: existing?.platform_name || '',
     });
@@ -139,8 +165,77 @@ export default function AdminPanel() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditState({ streamUrl: '', affiliateUrl: '', platformName: '' });
+    setEditState({ links: [{ ...EMPTY_LINK }], affiliateUrl: '', platformName: '' });
   };
+
+  const updateLink = (index: number, field: keyof LinkRow, value: string) => {
+    setEditState((s) => ({
+      ...s,
+      links: s.links.map((l, i) => (i === index ? { ...l, [field]: value } : l)),
+    }));
+  };
+
+  const addLink = (max: number) => {
+    setEditState((s) =>
+      s.links.length >= max ? s : { ...s, links: [...s.links, { ...EMPTY_LINK }] }
+    );
+  };
+
+  const removeLink = (index: number) => {
+    setEditState((s) => ({
+      ...s,
+      links:
+        s.links.length <= 1
+          ? [{ ...EMPTY_LINK }]
+          : s.links.filter((_, i) => i !== index),
+    }));
+  };
+
+  const renderLinksEditor = (max: number) => (
+    <div className="space-y-2">
+      {editState.links.map((link, i) => (
+        <div key={i} className="flex items-center gap-2">
+          {max > 1 && (
+            <input
+              type="text"
+              value={link.name}
+              onChange={(e) => updateLink(i, 'name', e.target.value)}
+              placeholder={`ناو (لینکی ${i + 1})`}
+              className="w-28 sm:w-40 shrink-0 bg-bg-600 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slatey-400"
+            />
+          )}
+          <input
+            type="text"
+            value={link.url}
+            onChange={(e) => updateLink(i, 'url', e.target.value)}
+            placeholder="https://youtube.com/..."
+            className="flex-1 min-w-0 bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
+            dir="ltr"
+          />
+          {max > 1 && (
+            <button
+              type="button"
+              onClick={() => removeLink(i)}
+              aria-label="Remove link"
+              className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-bg-600 hover:bg-live-500/20 text-slatey-300 hover:text-live-400 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      ))}
+      {max > 1 && editState.links.length < max && (
+        <button
+          type="button"
+          onClick={() => addLink(max)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-xs text-slatey-300 hover:text-white transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add another link
+        </button>
+      )}
+    </div>
+  );
 
   const goHome = () => {
     window.location.href = '/';
@@ -323,14 +418,7 @@ export default function AdminPanel() {
           </div>
           {editingId === '__BEIN_NEWS__' && (
             <div className="space-y-2 pt-2">
-              <input
-                type="text"
-                value={editState.streamUrl}
-                onChange={(e) => setEditState((s) => ({ ...s, streamUrl: e.target.value }))}
-                placeholder="Paste YouTube Live URL for beIN SPORTS NEWS..."
-                className="w-full bg-bg-600 border border-white/10 rounded-lg px-4 py-2 text-sm text-white"
-                dir="ltr"
-              />
+              {renderLinksEditor(1)}
               <div className="flex gap-2">
                 <button
                   onClick={() => handleSave('__BEIN_NEWS__')}
@@ -410,16 +498,9 @@ export default function AdminPanel() {
                       <div>
                         <label className="flex items-center gap-1.5 text-xs text-slatey-400 mb-1.5">
                           <Youtube className="w-3.5 h-3.5 text-live-400" />
-                          YouTube Embed URL
+                          Stream links (first one opens by default)
                         </label>
-                        <input
-                          type="text"
-                          value={editState.streamUrl}
-                          onChange={(e) => setEditState((s) => ({ ...s, streamUrl: e.target.value }))}
-                          placeholder="https://youtube.com..."
-                          className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
-                          dir="ltr"
-                        />
+                        {renderLinksEditor(MAX_LINKS)}
                       </div>
 
                       <div>
