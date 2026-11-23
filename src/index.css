@@ -86,15 +86,43 @@
 
 /*
  * Derby lime accent: white text is unreadable on bright lime,
- * so text on solid lime backgrounds uses the logo's dark navy.
+ * so ANY solid lime surface (normal, hover, group-hover, active, focus)
+ * uses the logo's dark navy for its text and icons.
  * (Kept outside @layer on purpose so it is always included.)
  */
-.bg-accent-500.text-white,
-.bg-accent-600.text-white,
-.bg-accent-400.text-white,
-.bg-accent-500 > .text-white,
-.bg-accent-600 > .text-white,
-[class*="from-accent-"].text-white,
-[class*="from-accent-"] .text-white {
+.bg-accent-400,
+.bg-accent-500,
+.bg-accent-600,
+[class*="from-accent-"] {
   color: #0B1220;
+}
+.bg-accent-400 *,
+.bg-accent-500 *,
+.bg-accent-600 *,
+[class*="from-accent-"] * {
+  color: inherit;
+}
+
+/* Hover / pressed / focus states that turn an element lime */
+.hover\:bg-accent-400:hover,
+.hover\:bg-accent-500:hover,
+.hover\:bg-accent-600:hover,
+.active\:bg-accent-500:active,
+.active\:bg-accent-600:active,
+.focus\:bg-accent-500:focus,
+.group:hover .group-hover\:bg-accent-400,
+.group:hover .group-hover\:bg-accent-500,
+.group:hover .group-hover\:bg-accent-600 {
+  color: #0B1220 !important;
+}
+.hover\:bg-accent-400:hover *,
+.hover\:bg-accent-500:hover *,
+.hover\:bg-accent-600:hover *,
+.active\:bg-accent-500:active *,
+.active\:bg-accent-600:active *,
+.focus\:bg-accent-500:focus *,
+.group:hover .group-hover\:bg-accent-400 *,
+.group:hover .group-hover\:bg-accent-500 *,
+.group:hover .group-hover\:bg-accent-600 * {
+  color: inherit !important;
 }
