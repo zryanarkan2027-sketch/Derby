@@ -1,38 +1,77 @@
-import { ShieldCheck, Radio, Trophy, Sparkles } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ShieldCheck, Radio, Play, RefreshCw } from 'lucide-react';
+
+export interface StreamLink {
+  name: string;
+  url: string;
+}
 
 interface VideoPlayerProps {
+  /** Old single-link prop (still supported) */
   streamUrl?: string;
+  /** New: several links for one match */
+  streams?: StreamLink[];
   matchTitle: string;
+  /** Optional, used for the poster before playing */
+  homeName?: string;
+  awayName?: string;
+  homeLogo?: string;
+  awayLogo?: string;
+  timeLabel?: string;
 }
 
-function formatYouTubeEmbedUrl(url?: string): string | null {
-  if (!url || !url.trim()) return null;
-  const cleanUrl = url.trim();
+/** Turns YouTube watch/live/short links into embed links. Only http(s) is allowed. */
+function normalizeUrl(raw?: string): string | null {
+  const url = (raw || '').trim();
+  if (!url) return null;
+  if (!/^https?:\/\//i.test(url)) return null;
 
-  if (cleanUrl.includes('://youtube.com')) {
-    return cleanUrl;
+  const yt = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  if (yt && yt[1]) {
+    return `https://www.youtube.com/embed/${yt[1]}?rel=0`;
   }
-
-  const watchMatch = cleanUrl.match(/(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/))([a-zA-Z0-9_-]{11})/);
-  if (watchMatch && watchMatch) {
-    return `https://www.://youtube.com${watchMatch}?autoplay=1&rel=0`;
-  }
-
-  const shortMatch = cleanUrl.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-  if (shortMatch && shortMatch) {
-    return `https://www.://youtube.com${shortMatch}?autoplay=1&rel=0`;
-  }
-
-  return cleanUrl;
+  return url;
 }
 
-export default function VideoPlayer({ streamUrl, matchTitle }: VideoPlayerProps) {
-  const embedUrl = formatYouTubeEmbedUrl(streamUrl);
-  const hasStream = Boolean(embedUrl);
+function withAutoplay(url: string): string {
+  if (!/youtube\.com\/embed\//.test(url)) return url;
+  return url.includes('?') ? `${url}&autoplay=1` : `${url}?autoplay=1`;
+}
+
+export default function VideoPlayer({
+  streamUrl,
+  streams,
+  matchTitle,
+  homeName,
+  awayName,
+  homeLogo,
+  awayLogo,
+  timeLabel,
+}: VideoPlayerProps) {
+  const links = useMemo(() => {
+    const source: StreamLink[] =
+      streams && streams.length > 0
+        ? streams
+        : streamUrl
+          ? [{ name: 'لینکی ١', url: streamUrl }]
+          : [];
+    return source
+      .map((s, i) => ({ name: s.name?.trim() || `لینکی ${i + 1}`, url: normalizeUrl(s.url) }))
+      .filter((s): s is { name: string; url: string } => Boolean(s.url));
+  }, [streams, streamUrl]);
+
+  const [active, setActive] = useState(0);
+  const [started, setStarted] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const hasStream = links.length > 0;
+  const current = links[Math.min(active, Math.max(links.length - 1, 0))];
 
   return (
     <div className="mb-3">
-      {/* Official stream label */}
+      {/* Header row */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-accent-400" />
@@ -41,82 +80,140 @@ export default function VideoPlayer({ streamUrl, matchTitle }: VideoPlayerProps)
           </span>
         </div>
         {hasStream && (
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-0.5 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            پەخشی فەرمی چالاکە
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-live-400 bg-live-500/10 border border-live-500/20 px-2.5 py-0.5 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-live-500 animate-pulse" />
+            پەخش بەردەستە
           </span>
         )}
       </div>
 
-      {/* 16:9 video / stadium graphic container */}
+      {/* 16:9 player */}
       <div
         className="relative w-full overflow-hidden rounded-xl border border-white/10 bg-bg-900 shadow-2xl"
         style={{ aspectRatio: '16/9' }}
       >
-        {hasStream && embedUrl ? (
+        {hasStream && current && started ? (
           <iframe
-            src={embedUrl}
-            title={matchTitle}
+            key={`${active}-${reloadKey}`}
+            src={withAutoplay(current.url)}
+            title={`${matchTitle} - ${current.name}`}
             className="absolute inset-0 w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
             allowFullScreen
-            frameBorder="0"
+            referrerPolicy="strict-origin-when-cross-origin"
+            style={{ border: 0 }}
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 overflow-hidden bg-gradient-to-br from-[#0a192f] via-[#0d2137] to-[#06101e]">
-            {/* Football Pitch SVG Lines Background */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden bg-gradient-to-br from-bg-800 via-bg-900 to-bg-900">
+            {/* Pitch lines */}
             <svg
-              className="absolute inset-0 w-full h-full opacity-15 pointer-events-none"
+              className="absolute inset-0 w-full h-full opacity-[0.07] pointer-events-none"
               viewBox="0 0 800 450"
               fill="none"
-              xmlns="http://w3.org"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid slice"
             >
-              <rect x="30" y="25" width="740" height="400" rx="8" stroke="#10b981" strokeWidth="3" />
-              <line x1="400" y1="25" x2="400" y2="425" stroke="#10b981" strokeWidth="3" />
-              <circle cx="400" cy="225" r="65" stroke="#10b981" strokeWidth="3" />
-              <circle cx="400" cy="225" r="6" fill="#10b981" />
-              <rect x="30" y="115" width="110" height="220" stroke="#10b981" strokeWidth="3" />
-              <rect x="660" y="115" width="110" height="220" stroke="#10b981" strokeWidth="3" />
-              <rect x="30" y="165" width="45" height="120" stroke="#10b981" strokeWidth="3" />
-              <rect x="725" y="165" width="45" height="120" stroke="#10b981" strokeWidth="3" />
+              <rect x="30" y="25" width="740" height="400" rx="8" stroke="#C6F432" strokeWidth="3" />
+              <line x1="400" y1="25" x2="400" y2="425" stroke="#C6F432" strokeWidth="3" />
+              <circle cx="400" cy="225" r="65" stroke="#C6F432" strokeWidth="3" />
+              <circle cx="400" cy="225" r="6" fill="#C6F432" />
+              <rect x="30" y="115" width="110" height="220" stroke="#C6F432" strokeWidth="3" />
+              <rect x="660" y="115" width="110" height="220" stroke="#C6F432" strokeWidth="3" />
             </svg>
 
-            {/* Glowing Center Stadium Card */}
-            <div className="relative z-10 flex flex-col items-center text-center max-w-md gap-3">
-              <div className="relative">
-                <div className="absolute -inset-2 rounded-full bg-accent-500/20 blur-md animate-pulse" />
-                <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-tr from-accent-600 to-emerald-400 flex items-center justify-center shadow-lg border border-white/20">
-                  <Radio className="w-7 h-7 text-white animate-pulse" />
+            <div className="relative z-10 flex flex-col items-center text-center gap-3 sm:gap-4 w-full max-w-lg">
+              {/* Teams */}
+              {homeName && awayName ? (
+                <div className="flex items-center justify-center gap-4 sm:gap-8 w-full" dir="ltr">
+                  <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                    {homeLogo && (
+                      <img src={homeLogo} alt="" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
+                    )}
+                    <span className="text-white font-bold text-xs sm:text-sm truncate max-w-full">
+                      {homeName}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center shrink-0">
+                    <span className="text-slatey-400 text-xs font-bold">VS</span>
+                    {timeLabel && (
+                      <span className="text-white font-bold text-lg sm:text-2xl mt-1">{timeLabel}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                    {awayLogo && (
+                      <img src={awayLogo} alt="" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
+                    )}
+                    <span className="text-white font-bold text-xs sm:text-sm truncate max-w-full">
+                      {awayName}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <h3 className="text-white font-bold text-base sm:text-lg">{matchTitle}</h3>
+              )}
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-emerald-300">
-                <Sparkles className="w-3.5 h-3.5" />
-                ڕووماڵی ڕاستەوخۆی یاریگا • Match Center
-              </div>
-
-              <h3 className="text-white font-bold text-base sm:text-lg tracking-wide">
-                {matchTitle}
-              </h3>
-
-              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                بۆ سەیرکردنی پەخشی ڕاستەوخۆ بە کوالێتی HD دوگمەی خوارەوە دابگرە، یان لێرەوە چاودێری ئەنجام و ئامارە ڕاستەوخۆکان بکە.
-              </p>
-
-              <div className="flex items-center gap-4 mt-1 text-[11px] text-slate-400">
-                <span className="flex items-center gap-1">
-                  <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                  ئاماری ڕاستەوخۆ
-                </span>
-                <span>•</span>
-                <span>پێکهاتەی یانەکان</span>
-                <span>•</span>
-                <span>پەخشی فەرمی</span>
-              </div>
+              {hasStream ? (
+                <button
+                  onClick={() => setStarted(true)}
+                  className="group flex items-center gap-3 px-6 py-3 rounded-full bg-accent-500 hover:bg-accent-400 font-bold text-sm sm:text-base accent-glow transition-colors"
+                >
+                  <Play className="w-5 h-5 fill-current" />
+                  پەخش بکە
+                </button>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-2xl bg-bg-600 border border-white/10 flex items-center justify-center">
+                    <Radio className="w-6 h-6 text-slatey-300" />
+                  </div>
+                  <p className="text-slatey-300 text-xs sm:text-sm leading-relaxed max-w-sm">
+                    هێشتا لینکی پەخش بۆ ئەم یارییە دانەنراوە. دوایی سەردانی بکەرەوە.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
+
+      {/* Link picker + refresh */}
+      {hasStream && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {links.length > 1 &&
+            links.map((l, i) => (
+              <button
+                key={`${l.name}-${i}`}
+                onClick={() => {
+                  setActive(i);
+                  setReloadKey((k) => k + 1);
+                }}
+                className={
+                  i === active
+                    ? 'px-4 py-1.5 rounded-full text-xs font-bold bg-accent-500'
+                    : 'px-4 py-1.5 rounded-full text-xs font-medium bg-bg-600 text-slatey-300 hover:bg-bg-500 hover:text-white transition-colors'
+                }
+              >
+                {l.name}
+              </button>
+            ))}
+
+          {started && (
+            <button
+              onClick={() => setReloadKey((k) => k + 1)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-bg-600 text-slatey-300 hover:bg-bg-500 hover:text-white transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              تازەکردنەوە
+            </button>
+          )}
+        </div>
+      )}
+
+      {hasStream && started && (
+        <p className="mt-2 text-[11px] text-slatey-400">
+          ئەگەر پەخشەکە وەستا، تازەی بکەرەوە
+          {links.length > 1 ? ' یان لینکێکی تر هەڵبژێرە.' : '.'}
+        </p>
+      )}
     </div>
   );
 }
