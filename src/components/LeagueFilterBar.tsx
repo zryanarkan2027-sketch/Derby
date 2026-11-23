@@ -5,8 +5,9 @@ interface LeagueFilterBarProps {
   onChange: (id: LeagueFilter) => void;
 }
 
-// Display order: All, Iraq, Premier League, La Liga, Champions League, Serie A, Bundesliga, International
-const LEAGUE_ORDER: LeagueFilter[] = [
+// Display order: All, Iraq, Premier League, La Liga, Champions League, Serie A, Bundesliga, Ligue 1, International
+// A league only appears if it also exists in `leagues` (src/data/matches.ts).
+const LEAGUE_ORDER = [
   'all',
   'iraq_stars',
   'premier_league',
@@ -14,8 +15,9 @@ const LEAGUE_ORDER: LeagueFilter[] = [
   'champions_league',
   'serie_a',
   'bundesliga',
+  'ligue_1',
   'international',
-];
+] as LeagueFilter[];
 
 const orderedLeagues = LEAGUE_ORDER.map((id) => leagues.find((l) => l.id === id)).filter(
   (l): l is (typeof leagues)[number] => Boolean(l)
