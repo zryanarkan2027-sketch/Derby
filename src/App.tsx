@@ -14,7 +14,8 @@ import {
   setSoundEnabled,
   unlockAudio,
   armAudioUnlock,
-  playGoal,
+  playChime,
+  playChampionsDayMusicOnce,
 } from '@/data/goalSound';
 import InfoPage, { SiteFooter, type InfoPageId } from '@/components/InfoPages';
 import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
@@ -76,7 +77,7 @@ function MainApp() {
     setSoundEnabled(next);
     if (next) {
       unlockAudio();
-      playGoal(); // short demo so the visitor hears what it sounds like
+      playChime(); // soft confirmation sound
     }
   };
 
@@ -101,11 +102,22 @@ function MainApp() {
     prevScores.current = next;
     if (firstLoad || goals.length === 0) return;
 
-    playGoal();
     setGoalToast(goals[0]);
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setGoalToast(null), 7000);
   }, [matches]);
+
+  // Champions League day: play the original fanfare once (after the visitor's first tap)
+  useEffect(() => {
+    if (!soundOn) return;
+    const now = new Date();
+    const clToday = matches.some(
+      (m) =>
+        /champions\s*league|چامپیۆنزلیگ/i.test(m.leagueName) &&
+        isTodayInBaghdad(m.kickoffDate, now)
+    );
+    if (clToday) playChampionsDayMusicOnce();
+  }, [matches, soundOn]);
 
   useEffect(() => {
     getStreamData('__BEIN_NEWS__')
