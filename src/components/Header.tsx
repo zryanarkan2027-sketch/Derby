@@ -73,13 +73,13 @@ export default function Header({
             </div>
           </div>
 
-          {/* Goal sound toggle */}
+          {/* Sound toggle */}
           {onToggleSound && (
             <button
               onClick={onToggleSound}
               aria-pressed={soundOn}
-              aria-label={soundOn ? 'کوژاندنەوەی دەنگی گۆڵ' : 'چالاککردنی دەنگی گۆڵ'}
-              title={soundOn ? 'دەنگی گۆڵ: چالاکە' : 'دەنگی گۆڵ: کوژاوەیە'}
+              aria-label={soundOn ? 'کوژاندنەوەی دەنگ' : 'چالاککردنی دەنگ'}
+              title={soundOn ? 'دەنگ: چالاکە' : 'دەنگ: کوژاوەیە'}
               className={`shrink-0 flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
                 soundOn
                   ? 'bg-accent-500/15 text-accent-400 hover:bg-accent-500/25'
