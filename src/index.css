@@ -43,8 +43,9 @@
     @apply bg-bg-700/80 backdrop-blur-sm border border-white/5 rounded-xl;
   }
 
+  /* Soft lime glow (Derby brand colour) */
   .accent-glow {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 24px rgba(198, 244, 50, 0.18);
   }
 
   .live-glow {
@@ -81,4 +82,19 @@
       animation-play-state: paused;
     }
   }
+}
+
+/*
+ * Derby lime accent: white text is unreadable on bright lime,
+ * so text on solid lime backgrounds uses the logo's dark navy.
+ * (Kept outside @layer on purpose so it is always included.)
+ */
+.bg-accent-500.text-white,
+.bg-accent-600.text-white,
+.bg-accent-400.text-white,
+.bg-accent-500 > .text-white,
+.bg-accent-600 > .text-white,
+[class*="from-accent-"].text-white,
+[class*="from-accent-"] .text-white {
+  color: #0B1220;
 }
