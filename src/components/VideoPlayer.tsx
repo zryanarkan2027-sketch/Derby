@@ -1,10 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import type { StreamLink } from '@/data/streamUrls';
 import { ShieldCheck, Radio, Play, RefreshCw } from 'lucide-react';
-
-export interface StreamLink {
-  name: string;
-  url: string;
-}
 
 interface VideoPlayerProps {
   /** Old single-link prop (still supported) */
@@ -15,8 +11,9 @@ interface VideoPlayerProps {
   /** Optional, used for the poster before playing */
   homeName?: string;
   awayName?: string;
-  homeLogo?: string;
-  awayLogo?: string;
+  /** Any element, e.g. <TeamLogo ... /> */
+  homeLogo?: ReactNode;
+  awayLogo?: ReactNode;
   timeLabel?: string;
 }
 
@@ -126,9 +123,7 @@ export default function VideoPlayer({
               {homeName && awayName ? (
                 <div className="flex items-center justify-center gap-4 sm:gap-8 w-full" dir="ltr">
                   <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
-                    {homeLogo && (
-                      <img src={homeLogo} alt="" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
-                    )}
+                    {homeLogo}
                     <span className="text-white font-bold text-xs sm:text-sm truncate max-w-full">
                       {homeName}
                     </span>
@@ -140,9 +135,7 @@ export default function VideoPlayer({
                     )}
                   </div>
                   <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
-                    {awayLogo && (
-                      <img src={awayLogo} alt="" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
-                    )}
+                    {awayLogo}
                     <span className="text-white font-bold text-xs sm:text-sm truncate max-w-full">
                       {awayName}
                     </span>
