@@ -9,6 +9,7 @@ import {
   type StreamData,
 } from '@/data/streamUrls';
 import { signIn, signOut, getAccessToken } from '@/data/adminAuth';
+import Logo from '@/components/Logo';
 import {
   Lock, Save, Search, Loader2, CheckCircle, ArrowRight,
   AlertCircle, MousePointerClick, Youtube, LogOut,
@@ -243,14 +244,9 @@ export default function AdminPanel() {
       <div className="sticky top-0 z-50 bg-bg-800/95 backdrop-blur-md border-b border-white/5">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">DB</span>
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className="text-white font-bold text-sm">Derby</span>
-                <span className="text-accent-400 text-[10px]">Admin Panel</span>
-              </div>
+            <div className="flex items-center gap-3">
+              <Logo height={32} />
+              <span className="text-accent-400 text-[11px] font-medium border-r border-white/10 pr-3">Admin Panel</span>
             </div>
             <div className="flex items-center gap-1">
               <button
