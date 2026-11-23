@@ -12,18 +12,18 @@ export default {
           600: '#1c2838',
           500: '#243246',
         },
-        // Vibrant green for primary accents
+        // Derby brand lime (matches the logo, #C6F432)
         accent: {
-          50: '#ecfdf5',
-          100: '#d1fae5',
-          200: '#a7f3d0',
-          300: '#6ee7b7',
-          400: '#34d399',
-          500: '#10b981',
-          600: '#059669',
-          700: '#047857',
-          800: '#065f46',
-          900: '#064e3b',
+          50: '#fbfeee',
+          100: '#f5fdd8',
+          200: '#ebfbb0',
+          300: '#dff985',
+          400: '#d4f65a',
+          500: '#C6F432',
+          600: '#a9d61e',
+          700: '#84a816',
+          800: '#637e14',
+          900: '#435410',
         },
         // Red for live indicators
         live: {
