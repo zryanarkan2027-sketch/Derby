@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, Menu, X, Trophy, Radio, Home } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 interface HeaderProps {
   onNavigate: (page: 'home' | 'leagues' | 'live') => void;
@@ -23,15 +24,10 @@ export default function Header({ onNavigate, onSearch, searchQuery }: HeaderProp
           {/* Logo */}
           <button
             onClick={() => onNavigate('home')}
-            className="flex items-center gap-2 shrink-0 group"
+            aria-label="Derby"
+            className="shrink-0 transition-transform hover:scale-105"
           >
-            <div className="relative w-10 h-10 rounded-lg bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center accent-glow transition-transform group-hover:scale-105">
-              <span className="text-white font-bold text-lg">DB</span>
-            </div>
-            <div className="flex flex-col leading-tight text-right">
-              <span className="text-white font-bold text-base">Derby</span>
-              <span className="text-accent-400 text-[10px] font-medium">derby</span>
-            </div>
+            <Logo height={36} />
           </button>
 
           {/* Desktop Nav */}
