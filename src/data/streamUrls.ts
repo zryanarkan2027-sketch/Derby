@@ -12,12 +12,18 @@ export class StreamError extends Error {
   }
 }
 
+export interface StreamLink {
+  name: string;
+  url: string;
+}
+
 interface StreamRow {
   match_id: string;
   stream_url: string | null;
   affiliate_url: string | null;
   platform_name: string | null;
   click_count: number | null;
+  streams?: unknown;
 }
 
 export interface StreamData {
@@ -25,6 +31,24 @@ export interface StreamData {
   affiliate_url: string;
   platform_name: string;
   click_count: number;
+  streams: StreamLink[];
+}
+
+function parseStreams(raw: unknown, fallbackUrl: string): StreamLink[] {
+  const out: StreamLink[] = [];
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      if (item && typeof item === 'object') {
+        const url = String((item as { url?: unknown }).url ?? '').trim();
+        const name = String((item as { name?: unknown }).name ?? '').trim();
+        if (url) out.push({ name, url });
+      }
+    }
+  }
+  if (out.length === 0 && fallbackUrl) {
+    out.push({ name: 'لینکی ١', url: fallbackUrl });
+  }
+  return out;
 }
 
 export function convertToEmbedUrl(input: string): string {
@@ -86,18 +110,32 @@ async function supabaseFetch(
 }
 
 function cleanRow(row: StreamRow): StreamData {
+  const streamUrl = (row.stream_url || '').trim();
   return {
-    stream_url: (row.stream_url || '').trim(),
+    stream_url: streamUrl,
     affiliate_url: (row.affiliate_url || '').trim(),
     platform_name: (row.platform_name || '').trim(),
     click_count: row.click_count || 0,
+    streams: parseStreams(row.streams, streamUrl),
   };
 }
 
 export async function getAllStreamData(): Promise<Record<string, StreamData>> {
-  const resp = await supabaseFetch(
-    '/match_streams?select=match_id,stream_url,affiliate_url,platform_name,click_count'
-  );
+  let resp: Response;
+  try {
+    resp = await supabaseFetch(
+      '/match_streams?select=match_id,stream_url,affiliate_url,platform_name,click_count,streams'
+    );
+  } catch (err) {
+    // The "streams" column may not exist yet: fall back to the old columns
+    if (err instanceof StreamError && err.status === 400) {
+      resp = await supabaseFetch(
+        '/match_streams?select=match_id,stream_url,affiliate_url,platform_name,click_count'
+      );
+    } else {
+      throw err;
+    }
+  }
   const rows: StreamRow[] = await resp.json();
   const map: Record<string, StreamData> = {};
   for (const row of rows) {
@@ -107,16 +145,24 @@ export async function getAllStreamData(): Promise<Record<string, StreamData>> {
 }
 
 export async function getStreamData(matchId: string): Promise<StreamData | undefined> {
-  const resp = await supabaseFetch(
-    `/match_streams?match_id=eq.${encodeURIComponent(matchId)}&select=stream_url,affiliate_url,platform_name,click_count`
-  );
+  const base = `/match_streams?match_id=eq.${encodeURIComponent(matchId)}&select=stream_url,affiliate_url,platform_name,click_count`;
+  let resp: Response;
+  try {
+    resp = await supabaseFetch(`${base},streams`);
+  } catch (err) {
+    if (err instanceof StreamError && err.status === 400) {
+      resp = await supabaseFetch(base);
+    } else {
+      throw err;
+    }
+  }
   const rows: StreamRow[] = await resp.json();
   if (rows.length === 0) return undefined;
   return cleanRow(rows[0]);
 }
 
 export interface StreamUpdate {
-  stream_url: string;
+  streams: StreamLink[];
   affiliate_url: string;
   platform_name: string;
 }
@@ -126,11 +172,13 @@ export async function setStreamData(
   matchId: string,
   data: StreamUpdate
 ): Promise<void> {
-  const streamUrl = data.stream_url.trim();
+  const streams = data.streams
+    .map((l) => ({ name: l.name.trim(), url: l.url.trim() }))
+    .filter((l) => l.url.length > 0);
   const affiliateUrl = data.affiliate_url.trim();
   const platformName = data.platform_name.trim();
 
-  const hasAny = streamUrl.length > 0 || affiliateUrl.length > 0;
+  const hasAny = streams.length > 0 || affiliateUrl.length > 0;
 
   if (!hasAny && platformName.length === 0) {
     await supabaseFetch(
@@ -149,7 +197,9 @@ export async function setStreamData(
     },
     body: JSON.stringify({
       match_id: matchId,
-      stream_url: streamUrl,
+      // first link also goes in stream_url (used by the featured stream and older code)
+      stream_url: streams[0]?.url ?? '',
+      streams,
       affiliate_url: affiliateUrl,
       platform_name: platformName,
       updated_at: new Date().toISOString(),
