@@ -9,7 +9,7 @@ import MatchList from '@/components/MatchList';
 import ResultsTicker from '@/components/ResultsTicker';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
-import InfoPage, { SiteFooter, type InfoPageId } from '@/InfoPages';
+import InfoPage, { SiteFooter, type InfoPageId } from '@/components/InfoPages';
 import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
 
 const INFO_ROUTES: Record<string, InfoPageId> = {
@@ -159,7 +159,7 @@ function MainApp() {
           className="absolute inset-0 opacity-10"
           style={{
             backgroundImage:
-              'radial-gradient(circle at 20% 50%, #10b981 0%, transparent 50%), radial-gradient(circle at 80% 50%, #ef4444 0%, transparent 50%)',
+              'radial-gradient(circle at 20% 50%, #C6F432 0%, transparent 50%), radial-gradient(circle at 80% 50%, #ef4444 0%, transparent 50%)',
           }}
         />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
