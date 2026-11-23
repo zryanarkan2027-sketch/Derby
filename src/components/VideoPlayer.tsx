@@ -121,7 +121,7 @@ export default function VideoPlayer({
             <div className="relative z-10 flex flex-col items-center text-center gap-3 sm:gap-4 w-full max-w-lg">
               {/* Teams */}
               {homeName && awayName ? (
-                <div className="flex items-center justify-center gap-4 sm:gap-8 w-full" dir="ltr">
+                <div className="flex items-center justify-center gap-4 sm:gap-8 w-full">
                   <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
                     {homeLogo}
                     <span className="text-white font-bold text-xs sm:text-sm truncate max-w-full">
