@@ -9,7 +9,12 @@ import LineupsTab from './tabs/LineupsTab';
 import StatsTab from './tabs/StatsTab';
 import MatchInfoTab from './tabs/MatchInfoTab';
 
-type MatchWithStreams = Match & { streams?: StreamLink[] };
+type MatchWithStreams = Match & {
+  streams?: StreamLink[];
+  affiliates?: StreamLink[];
+  affiliateUrl?: string;
+  platformName?: string;
+};
 
 interface MatchDetailsProps {
   match: MatchWithStreams;
@@ -20,6 +25,14 @@ type TabId = 'lineups' | 'stats' | 'info';
 
 export default function MatchDetails({ match, onBack }: MatchDetailsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('lineups');
+
+  const affiliateList: StreamLink[] = (
+    match.affiliates && match.affiliates.length > 0
+      ? match.affiliates
+      : match.affiliateUrl && match.affiliateUrl.trim()
+        ? [{ name: match.platformName || '', url: match.affiliateUrl.trim() }]
+        : []
+  ).filter((a) => /^https?:\/\//i.test(a.url));
 
   const isLive = match.status === 'live';
   const isFinished = match.status === 'finished';
@@ -127,25 +140,28 @@ export default function MatchDetails({ match, onBack }: MatchDetailsProps) {
         }
       />
 
-      {/* Official Affiliate Watch Button */}
-      {match.affiliateUrl && match.affiliateUrl.trim().length > 0 && (
-        <div className="mb-6 mt-4">
-          <button
-            onClick={() => {
-              incrementClickCount(match.id);
-              window.open(match.affiliateUrl, '_blank', 'noopener,noreferrer');
-            }}
-            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-accent-500 via-accent-400 to-warning-400 px-6 py-4 shadow-lg shadow-accent-500/20 transition-all hover:shadow-accent-500/40 hover:scale-[1.01] active:scale-[0.99]"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-            <div className="relative flex items-center justify-center gap-3 text-bg-900">
-              <PlayCircle className="w-6 h-6 shrink-0" />
-              <span className="font-bold text-sm sm:text-base text-center leading-tight">
-                سەیرکردنی ڕاستەوخۆ بە کوالێتی HD لەسەر {match.platformName || 'پلاتفۆرمی فەرمی'}
-              </span>
-              <ExternalLink className="w-4 h-4 opacity-80 shrink-0" />
-            </div>
-          </button>
+      {/* Official watch buttons (one per affiliate link) */}
+      {affiliateList.length > 0 && (
+        <div className="mb-6 mt-4 space-y-3">
+          {affiliateList.map((aff, i) => (
+            <button
+              key={`${aff.url}-${i}`}
+              onClick={() => {
+                incrementClickCount(match.id);
+                window.open(aff.url, '_blank', 'noopener,noreferrer');
+              }}
+              className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-accent-500 via-accent-400 to-warning-400 px-6 py-4 shadow-lg shadow-accent-500/20 transition-all hover:shadow-accent-500/40 hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+              <div className="relative flex items-center justify-center gap-3 text-bg-900">
+                <PlayCircle className="w-6 h-6 shrink-0" />
+                <span className="font-bold text-sm sm:text-base text-center leading-tight">
+                  سەیرکردنی ڕاستەوخۆ بە کوالێتی HD لەسەر {aff.name || 'پلاتفۆرمی فەرمی'}
+                </span>
+                <ExternalLink className="w-4 h-4 opacity-80 shrink-0" />
+              </div>
+            </button>
+          ))}
         </div>
       )}
 
