@@ -9,8 +9,9 @@ import MatchList from '@/components/MatchList';
 import ResultsTicker from '@/components/ResultsTicker';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
+import FeaturedStream from '@/components/FeaturedStream';
 import InfoPage, { SiteFooter, type InfoPageId } from '@/components/InfoPages';
-import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
 const INFO_ROUTES: Record<string, InfoPageId> = {
   '/about': 'about',
@@ -43,15 +44,13 @@ function MainApp() {
   const [filterTab, setFilterTab] = useState<FilterTab>('today');
   const [leagueFilter, setLeagueFilter] = useState<LeagueFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMatch, setSelectedMatch] = useState<(Match & { streams?: StreamLink[] }) | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<(Match & { streams?: StreamLink[]; affiliates?: StreamLink[] }) | null>(null);
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [usingFallback, setUsingFallback] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [beinNewsUrl, setBeinNewsUrl] = useState<string>(
-    'https://youtube.com'
-  );
+  const [beinNewsUrl, setBeinNewsUrl] = useState<string | null>(null);
 
   // ---- Goal toast (silent) ----
   const [goalToast, setGoalToast] = useState<{ team: string; line: string } | null>(null);
@@ -141,6 +140,7 @@ function MainApp() {
                 platformName: data.platform_name || undefined,
                 clickCount: data.click_count,
                 streams: data.streams,
+                affiliates: data.affiliates,
               }
             : prev
         );
@@ -269,31 +269,8 @@ function MainApp() {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* 24/7 beIN SPORTS NEWS Live Box */}
-        <div className="glass-card overflow-hidden mb-6 border border-white/10">
-          <div className="flex items-center justify-between px-4 py-3 bg-bg-800/80 border-b border-white/5">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-live-500 animate-pulse" />
-              <Tv className="w-4 h-4 text-accent-400" />
-              <span className="text-sm font-bold text-white" dir="ltr">
-                پەخشی تایبەت و ڕاستەوخۆ
-              </span>
-            </div>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-live-500/15 text-live-400">
-              24/7 LIVE
-            </span>
-          </div>
-          <div className="relative w-full aspect-video max-h-[460px] bg-black">
-            <iframe
-              src={beinNewsUrl}
-              title="beIN SPORTS NEWS Live"
-              className="w-full h-full border-0"
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
-        </div>
+        {/* 24/7 featured stream (loads after the visitor taps play) */}
+        <FeaturedStream url={beinNewsUrl} />
 
         {/* Filter tabs */}
         <FilterTabs
