@@ -1,11 +1,12 @@
 // Derby sound: an optional, original fanfare on Champions League days.
 // Everything is synthesised with the Web Audio API (no files, no licensing).
-// If you add your OWN licensed file at  public/sounds/champions-day.mp3
-// the site plays that instead of the built-in fanfare.
+// If you add your OWN licensed file at  public/champions-day.mp3
+// the site plays that instead of the built-in fanfare (max 15 seconds, then fades out).
 
 const KEY = 'derby_sound';
 const CL_KEY = 'derby_cl_played';
-const CUSTOM_FILE = '/sounds/champions-day.mp3';
+const CUSTOM_FILE = '/champions-day.mp3';
+const MAX_SECONDS = 15;
 
 let ctx: AudioContext | null = null;
 let clArmed = false;
@@ -140,6 +141,20 @@ async function playCustomOrFanfare(): Promise<void> {
     const audio = new Audio(CUSTOM_FILE);
     audio.volume = 0.7;
     await audio.play(); // rejects if the file does not exist
+
+    // Never play longer than MAX_SECONDS: fade out during the last 2 seconds
+    window.setTimeout(() => {
+      const fade = () => {
+        if (audio.paused || audio.ended) return;
+        if (audio.volume > 0.05) {
+          audio.volume = Math.max(0, audio.volume - 0.07);
+          window.setTimeout(fade, 100);
+        } else {
+          audio.pause();
+        }
+      };
+      fade();
+    }, Math.max(MAX_SECONDS - 1, 1) * 1000);
     return;
   } catch {
     /* fall back to the built-in fanfare */
