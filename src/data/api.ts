@@ -16,6 +16,7 @@ const LEAGUES: { apiCode: string; code: string; id: LeagueId; name: string }[] =
   { apiCode: 'CL', code: 'uefa.champions', id: 'champions_league', name: 'Champions League' },
   { apiCode: 'SA', code: 'ita.1', id: 'serie_a', name: 'Serie A' },
   { apiCode: 'BL1', code: 'ger.1', id: 'bundesliga', name: 'Bundesliga' },
+  { apiCode: 'FL1', code: 'fra.1', id: 'ligue_1', name: 'Ligue 1' },
   { apiCode: 'WC', code: 'fifa.world', id: 'international', name: 'FIFA World Cup' },
   { apiCode: 'UNL', code: 'uefa.nations', id: 'international', name: 'UEFA Nations League' },
 ];
