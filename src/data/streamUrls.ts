@@ -24,6 +24,7 @@ interface StreamRow {
   platform_name: string | null;
   click_count: number | null;
   streams?: unknown;
+  affiliates?: unknown;
 }
 
 export interface StreamData {
@@ -32,9 +33,10 @@ export interface StreamData {
   platform_name: string;
   click_count: number;
   streams: StreamLink[];
+  affiliates: StreamLink[];
 }
 
-function parseStreams(raw: unknown, fallbackUrl: string): StreamLink[] {
+function parseLinks(raw: unknown): StreamLink[] {
   const out: StreamLink[] = [];
   if (Array.isArray(raw)) {
     for (const item of raw) {
@@ -44,9 +46,6 @@ function parseStreams(raw: unknown, fallbackUrl: string): StreamLink[] {
         if (url) out.push({ name, url });
       }
     }
-  }
-  if (out.length === 0 && fallbackUrl) {
-    out.push({ name: 'لینکی ١', url: fallbackUrl });
   }
   return out;
 }
@@ -101,42 +100,55 @@ async function supabaseFetch(
     } catch {
       // response had no JSON body
     }
-    throw new StreamError(
-      detail || `Supabase ${resp.status}`,
-      resp.status
-    );
+    throw new StreamError(detail || `Supabase ${resp.status}`, resp.status);
   }
   return resp;
 }
 
 function cleanRow(row: StreamRow): StreamData {
   const streamUrl = (row.stream_url || '').trim();
+  const affiliateUrl = (row.affiliate_url || '').trim();
+  const platformName = (row.platform_name || '').trim();
+
+  let streams = parseLinks(row.streams);
+  if (streams.length === 0 && streamUrl) {
+    streams = [{ name: 'لینکی ١', url: streamUrl }];
+  }
+  let affiliates = parseLinks(row.affiliates);
+  if (affiliates.length === 0 && affiliateUrl) {
+    affiliates = [{ name: platformName || 'پلاتفۆرمی فەرمی', url: affiliateUrl }];
+  }
+
   return {
     stream_url: streamUrl,
-    affiliate_url: (row.affiliate_url || '').trim(),
-    platform_name: (row.platform_name || '').trim(),
+    affiliate_url: affiliateUrl,
+    platform_name: platformName,
     click_count: row.click_count || 0,
-    streams: parseStreams(row.streams, streamUrl),
+    streams,
+    affiliates,
   };
 }
 
-export async function getAllStreamData(): Promise<Record<string, StreamData>> {
-  let resp: Response;
-  try {
-    resp = await supabaseFetch(
-      '/match_streams?select=match_id,stream_url,affiliate_url,platform_name,click_count,streams'
-    );
-  } catch (err) {
-    // The "streams" column may not exist yet: fall back to the old columns
-    if (err instanceof StreamError && err.status === 400) {
-      resp = await supabaseFetch(
-        '/match_streams?select=match_id,stream_url,affiliate_url,platform_name,click_count'
-      );
-    } else {
+/** Reads rows. If a newer column does not exist yet it falls back to the older column sets. */
+async function fetchRows(filter: string): Promise<StreamRow[]> {
+  const base = 'match_id,stream_url,affiliate_url,platform_name,click_count';
+  const variants = [`${base},streams,affiliates`, `${base},streams`, base];
+  let lastErr: unknown;
+  for (const cols of variants) {
+    try {
+      const resp = await supabaseFetch(`/match_streams?${filter}select=${cols}`);
+      return (await resp.json()) as StreamRow[];
+    } catch (err) {
+      lastErr = err;
+      if (err instanceof StreamError && err.status === 400) continue;
       throw err;
     }
   }
-  const rows: StreamRow[] = await resp.json();
+  throw lastErr;
+}
+
+export async function getAllStreamData(): Promise<Record<string, StreamData>> {
+  const rows = await fetchRows('');
   const map: Record<string, StreamData> = {};
   for (const row of rows) {
     map[row.match_id] = cleanRow(row);
@@ -145,26 +157,14 @@ export async function getAllStreamData(): Promise<Record<string, StreamData>> {
 }
 
 export async function getStreamData(matchId: string): Promise<StreamData | undefined> {
-  const base = `/match_streams?match_id=eq.${encodeURIComponent(matchId)}&select=stream_url,affiliate_url,platform_name,click_count`;
-  let resp: Response;
-  try {
-    resp = await supabaseFetch(`${base},streams`);
-  } catch (err) {
-    if (err instanceof StreamError && err.status === 400) {
-      resp = await supabaseFetch(base);
-    } else {
-      throw err;
-    }
-  }
-  const rows: StreamRow[] = await resp.json();
+  const rows = await fetchRows(`match_id=eq.${encodeURIComponent(matchId)}&`);
   if (rows.length === 0) return undefined;
   return cleanRow(rows[0]);
 }
 
 export interface StreamUpdate {
   streams: StreamLink[];
-  affiliate_url: string;
-  platform_name: string;
+  affiliates: StreamLink[];
 }
 
 // Admin only (requires a signed-in session)
@@ -172,15 +172,17 @@ export async function setStreamData(
   matchId: string,
   data: StreamUpdate
 ): Promise<void> {
-  const streams = data.streams
-    .map((l) => ({ name: l.name.trim(), url: l.url.trim() }))
-    .filter((l) => l.url.length > 0);
-  const affiliateUrl = data.affiliate_url.trim();
-  const platformName = data.platform_name.trim();
+  const clean = (list: StreamLink[]) =>
+    list
+      .map((l) => ({ name: l.name.trim(), url: l.url.trim() }))
+      .filter((l) => l.url.length > 0);
 
-  const hasAny = streams.length > 0 || affiliateUrl.length > 0;
+  const streams = clean(data.streams);
+  const affiliates = clean(data.affiliates);
+  const hasAny = streams.length > 0 || affiliates.length > 0;
 
-  if (!hasAny && platformName.length === 0) {
+  // Special rows (featured stream, counters) are never deleted, so their counters survive
+  if (!hasAny && !matchId.startsWith('__')) {
     await supabaseFetch(
       `/match_streams?match_id=eq.${encodeURIComponent(matchId)}`,
       { method: 'DELETE', admin: true }
@@ -197,18 +199,18 @@ export async function setStreamData(
     },
     body: JSON.stringify({
       match_id: matchId,
-      // first link also goes in stream_url (used by the featured stream and older code)
+      // the first link of each list is also kept in the older single columns
       stream_url: streams[0]?.url ?? '',
       streams,
-      affiliate_url: affiliateUrl,
-      platform_name: platformName,
+      affiliate_url: affiliates[0]?.url ?? '',
+      platform_name: affiliates[0]?.name ?? '',
+      affiliates,
       updated_at: new Date().toISOString(),
     }),
   });
 }
 
-// Public counters go through SQL functions (bump_click / bump_site_stats),
-// so visitors never get direct write access to the table.
+// Public counters go through SQL functions, so visitors never get direct write access.
 export async function incrementClickCount(matchId: string): Promise<void> {
   try {
     await supabaseFetch('/rpc/bump_click', {
@@ -221,20 +223,32 @@ export async function incrementClickCount(matchId: string): Promise<void> {
   }
 }
 
+/**
+ * Counts a real visitor once per day (Baghdad time).
+ * Not counted: the admin, bots and automated browsers.
+ */
 export async function recordSiteVisit(): Promise<void> {
   try {
-    if (typeof window !== 'undefined' && sessionStorage.getItem('derby_visited')) {
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem('derby_admin_session')) return;
+
+    const ua = navigator.userAgent || '';
+    if (
+      (navigator as Navigator & { webdriver?: boolean }).webdriver ||
+      /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit/i.test(ua)
+    ) {
       return;
     }
-    await supabaseFetch('/rpc/bump_site_stats', {
+
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Baghdad' }).format(new Date());
+    if (localStorage.getItem('derby_visit_day') === today) return;
+
+    await supabaseFetch('/rpc/bump_daily_visit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     });
-
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('derby_visited', 'true');
-    }
+    localStorage.setItem('derby_visit_day', today);
   } catch (err) {
     console.error('Failed to record visit:', err);
   }
