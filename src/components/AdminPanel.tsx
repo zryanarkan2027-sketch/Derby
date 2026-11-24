@@ -514,7 +514,7 @@ export default function AdminPanel() {
             ))}
           </div>
         </div>
-        <p className="text-[11px] text-slatey-400 mb-5">
+        <p dir="ltr" className="text-[11px] text-slatey-400 mb-5">
           A visitor is counted once per day (Baghdad time). The admin, bots and automated browsers are not counted.
           Counting started when the new version went live.
         </p>
