@@ -1,23 +1,14 @@
 import { useState } from 'react';
-import { Search, Menu, X, Trophy, Radio, Home, Volume2, VolumeX } from 'lucide-react';
+import { Search, Menu, X, Trophy, Radio, Home } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 interface HeaderProps {
   onNavigate: (page: 'home' | 'leagues' | 'live') => void;
   onSearch: (query: string) => void;
   searchQuery: string;
-  /** Goal sound on/off (optional) */
-  soundOn?: boolean;
-  onToggleSound?: () => void;
 }
 
-export default function Header({
-  onNavigate,
-  onSearch,
-  searchQuery,
-  soundOn = false,
-  onToggleSound,
-}: HeaderProps) {
+export default function Header({ onNavigate, onSearch, searchQuery }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = [
@@ -72,23 +63,6 @@ export default function Header({
               />
             </div>
           </div>
-
-          {/* Sound toggle */}
-          {onToggleSound && (
-            <button
-              onClick={onToggleSound}
-              aria-pressed={soundOn}
-              aria-label={soundOn ? 'کوژاندنەوەی دەنگ' : 'چالاککردنی دەنگ'}
-              title={soundOn ? 'دەنگ: چالاکە' : 'دەنگ: کوژاوەیە'}
-              className={`shrink-0 flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
-                soundOn
-                  ? 'bg-accent-500/15 text-accent-400 hover:bg-accent-500/25'
-                  : 'text-slatey-300 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              {soundOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-            </button>
-          )}
 
           {/* Mobile menu button */}
           <button
