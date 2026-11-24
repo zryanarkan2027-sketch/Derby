@@ -5,6 +5,7 @@ export type LeagueId =
   | 'champions_league'
   | 'serie_a'
   | 'bundesliga'
+  | 'ligue_1'
   | 'international';
 
 export type LeagueFilter = LeagueId | 'all';
@@ -17,6 +18,7 @@ export const leagues: { id: LeagueFilter; name: string; nameKu: string; apiCode?
   { id: 'champions_league', name: 'Champions League', nameKu: 'چامپیۆنزلیگ', apiCode: 'CL' },
   { id: 'serie_a', name: 'Serie A', nameKu: 'سێریا ئەی', apiCode: 'SA' },
   { id: 'bundesliga', name: 'Bundesliga', nameKu: 'بۆندسلیگا', apiCode: 'BL1' },
+  { id: 'ligue_1', name: 'Ligue 1', nameKu: 'خولی فەڕەنسا', apiCode: 'FL1' },
   { id: 'international', name: 'International', nameKu: 'نێودەوڵەتی' }
 );
 
