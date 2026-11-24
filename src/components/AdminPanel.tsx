@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { type Match } from '@/data/matches';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { type Match, getBaghdadDateKey } from '@/data/matches';
 import { fetchMatches } from '@/data/api';
 import {
   getAllStreamData,
@@ -12,7 +12,7 @@ import { signIn, signOut, getAccessToken } from '@/data/adminAuth';
 import Logo from '@/components/Logo';
 import {
   Lock, Save, Search, Loader2, CheckCircle, ArrowRight,
-  AlertCircle, MousePointerClick, Youtube, LogOut, Plus, Trash2,
+  AlertCircle, MousePointerClick, Youtube, LogOut, Plus, Trash2, Link2,
 } from 'lucide-react';
 
 interface LinkRow {
@@ -21,13 +21,33 @@ interface LinkRow {
 }
 
 interface EditState {
-  links: LinkRow[];
-  affiliateUrl: string;
-  platformName: string;
+  streams: LinkRow[];
+  affiliates: LinkRow[];
 }
+
+type ListKind = 'streams' | 'affiliates';
+type DayTab = 'today' | 'tomorrow' | 'yesterday' | 'all';
 
 const MAX_LINKS = 6;
 const EMPTY_LINK: LinkRow = { name: '', url: '' };
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const DAY_TABS: { id: DayTab; label: string }[] = [
+  { id: 'today', label: 'ئەمڕۆ' },
+  { id: 'tomorrow', label: 'سبەی' },
+  { id: 'yesterday', label: 'دوێنێ' },
+  { id: 'all', label: 'هەموو' },
+];
+
+function safeDayKey(iso: string): string {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return getBaghdadDateKey(d);
+  } catch {
+    return '';
+  }
+}
 
 export default function AdminPanel() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -40,9 +60,14 @@ export default function AdminPanel() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dayTab, setDayTab] = useState<DayTab>('today');
+  const [leagueFilter, setLeagueFilter] = useState<string>('all');
   const [streamDataMap, setStreamDataMap] = useState<Record<string, StreamData>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editState, setEditState] = useState<EditState>({ links: [{ ...EMPTY_LINK }], affiliateUrl: '', platformName: '' });
+  const [editState, setEditState] = useState<EditState>({
+    streams: [{ ...EMPTY_LINK }],
+    affiliates: [{ ...EMPTY_LINK }],
+  });
   const [savedId, setSavedId] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
@@ -103,34 +128,80 @@ export default function AdminPanel() {
     setStreamDataMap({});
   };
 
+  // ---------- link editing ----------
+  const updateRow = (kind: ListKind, index: number, field: keyof LinkRow, value: string) => {
+    setEditState((s) => ({
+      ...s,
+      [kind]: s[kind].map((l, i) => (i === index ? { ...l, [field]: value } : l)),
+    }));
+  };
+
+  const addRow = (kind: ListKind, max: number) => {
+    setEditState((s) =>
+      s[kind].length >= max ? s : { ...s, [kind]: [...s[kind], { ...EMPTY_LINK }] }
+    );
+  };
+
+  const removeRow = (kind: ListKind, index: number) => {
+    setEditState((s) => ({
+      ...s,
+      [kind]: s[kind].length <= 1 ? [{ ...EMPTY_LINK }] : s[kind].filter((_, i) => i !== index),
+    }));
+  };
+
+  const startEdit = (matchId: string) => {
+    const existing = streamDataMap[matchId];
+    const streams: LinkRow[] =
+      existing?.streams && existing.streams.length > 0
+        ? existing.streams.map((s) => ({ name: s.name, url: s.url }))
+        : [{ ...EMPTY_LINK }];
+    const affiliates: LinkRow[] =
+      existing?.affiliates && existing.affiliates.length > 0
+        ? existing.affiliates.map((s) => ({ name: s.name, url: s.url }))
+        : [{ ...EMPTY_LINK }];
+    setEditingId(matchId);
+    setEditState({ streams, affiliates });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditState({ streams: [{ ...EMPTY_LINK }], affiliates: [{ ...EMPTY_LINK }] });
+  };
+
   const handleSave = async (matchId: string) => {
     setSaving(true);
     setSaveError(null);
 
-    const streams = editState.links
+    const isFeatured = matchId === '__BEIN_NEWS__';
+
+    const streams = editState.streams
       .map((l) => ({ name: l.name.trim(), url: convertToEmbedUrl(l.url) }))
       .filter((l) => l.url.length > 0)
       .map((l, i) => ({ name: l.name || `لینکی ${i + 1}`, url: l.url }));
 
-    if (streams.some((l) => !/^https?:\/\//i.test(l.url))) {
+    const affiliates = isFeatured
+      ? []
+      : editState.affiliates
+          .map((l) => ({ name: l.name.trim(), url: l.url.trim() }))
+          .filter((l) => l.url.length > 0)
+          .map((l) => ({ name: l.name || 'پلاتفۆرمی فەرمی', url: l.url }));
+
+    if ([...streams, ...affiliates].some((l) => !/^https?:\/\//i.test(l.url))) {
       setSaveError('Every link must start with https://');
       setSaving(false);
       return;
     }
 
     try {
-      await setStreamData(matchId, {
-        streams,
-        affiliate_url: editState.affiliateUrl,
-        platform_name: editState.platformName,
-      });
+      await setStreamData(matchId, { streams, affiliates });
       setStreamDataMap((prev) => ({
         ...prev,
         [matchId]: {
           stream_url: streams[0]?.url ?? '',
           streams,
-          affiliate_url: editState.affiliateUrl.trim(),
-          platform_name: editState.platformName.trim(),
+          affiliate_url: affiliates[0]?.url ?? '',
+          platform_name: affiliates[0]?.name ?? '',
+          affiliates,
           click_count: prev[matchId]?.click_count || 0,
         },
       }));
@@ -147,75 +218,120 @@ export default function AdminPanel() {
     setSaving(false);
   };
 
-  const startEdit = (matchId: string) => {
-    const existing = streamDataMap[matchId];
-    const links: LinkRow[] =
-      existing?.streams && existing.streams.length > 0
-        ? existing.streams.map((s) => ({ name: s.name, url: s.url }))
-        : existing?.stream_url
-          ? [{ name: 'لینکی ١', url: existing.stream_url }]
-          : [{ ...EMPTY_LINK }];
-    setEditingId(matchId);
-    setEditState({
-      links,
-      affiliateUrl: existing?.affiliate_url || '',
-      platformName: existing?.platform_name || '',
+  const goHome = () => {
+    window.location.href = '/';
+  };
+
+  // ---------- statistics ----------
+  const stats = useMemo(() => {
+    const now = new Date();
+    const key = (offsetDays: number) => getBaghdadDateKey(new Date(now.getTime() - offsetDays * DAY_MS));
+
+    const visitorsByDay = new Map<string, number>();
+    let linkClicks = 0;
+    for (const [id, data] of Object.entries(streamDataMap)) {
+      if (id.startsWith('__DAY_')) {
+        visitorsByDay.set(id.slice(6, -2), data.click_count || 0);
+      } else if (!id.startsWith('__')) {
+        linkClicks += data.click_count || 0;
+      }
+    }
+
+    const last7 = Array.from({ length: 7 }, (_, i) => {
+      const k = key(6 - i);
+      return { key: k, label: k.slice(5), n: visitorsByDay.get(k) || 0 };
     });
-  };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditState({ links: [{ ...EMPTY_LINK }], affiliateUrl: '', platformName: '' });
-  };
+    let total = 0;
+    visitorsByDay.forEach((n) => (total += n));
 
-  const updateLink = (index: number, field: keyof LinkRow, value: string) => {
-    setEditState((s) => ({
-      ...s,
-      links: s.links.map((l, i) => (i === index ? { ...l, [field]: value } : l)),
-    }));
-  };
+    return {
+      today: visitorsByDay.get(key(0)) || 0,
+      week: last7.reduce((sum, d) => sum + d.n, 0),
+      total,
+      last7,
+      maxDay: Math.max(1, ...last7.map((d) => d.n)),
+      linkClicks,
+      featuredViews: streamDataMap['__BEIN_NEWS__']?.click_count || 0,
+    };
+  }, [streamDataMap]);
 
-  const addLink = (max: number) => {
-    setEditState((s) =>
-      s.links.length >= max ? s : { ...s, links: [...s.links, { ...EMPTY_LINK }] }
-    );
-  };
+  // ---------- match list (day + league + search) ----------
+  const dayKeys = useMemo(() => {
+    const now = new Date();
+    return {
+      today: getBaghdadDateKey(now),
+      tomorrow: getBaghdadDateKey(new Date(now.getTime() + DAY_MS)),
+      yesterday: getBaghdadDateKey(new Date(now.getTime() - DAY_MS)),
+    };
+  }, []);
 
-  const removeLink = (index: number) => {
-    setEditState((s) => ({
-      ...s,
-      links:
-        s.links.length <= 1
-          ? [{ ...EMPTY_LINK }]
-          : s.links.filter((_, i) => i !== index),
-    }));
-  };
+  const matchesForDay = useMemo(() => {
+    const list = matches.filter((m) => {
+      if (dayTab === 'all') return true;
+      return safeDayKey(m.kickoffDate) === dayKeys[dayTab];
+    });
+    return list.sort((a, b) => a.kickoffDate.localeCompare(b.kickoffDate));
+  }, [matches, dayTab, dayKeys]);
 
-  const renderLinksEditor = (max: number) => (
+  const dayCounts = useMemo(() => {
+    const counts: Record<DayTab, number> = { today: 0, tomorrow: 0, yesterday: 0, all: matches.length };
+    for (const m of matches) {
+      const k = safeDayKey(m.kickoffDate);
+      if (k === dayKeys.today) counts.today++;
+      else if (k === dayKeys.tomorrow) counts.tomorrow++;
+      else if (k === dayKeys.yesterday) counts.yesterday++;
+    }
+    return counts;
+  }, [matches, dayKeys]);
+
+  const leagueChips = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const m of matchesForDay) map.set(m.leagueName, (map.get(m.leagueName) || 0) + 1);
+    return Array.from(map.entries());
+  }, [matchesForDay]);
+
+  const activeLeague = leagueChips.some(([name]) => name === leagueFilter) ? leagueFilter : 'all';
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return matchesForDay.filter((m) => {
+      if (activeLeague !== 'all' && m.leagueName !== activeLeague) return false;
+      if (!q) return true;
+      return (
+        m.homeTeam.name.toLowerCase().includes(q) ||
+        m.awayTeam.name.toLowerCase().includes(q) ||
+        m.leagueName.toLowerCase().includes(q)
+      );
+    });
+  }, [matchesForDay, activeLeague, searchQuery]);
+
+  // ---------- small UI helpers ----------
+  const renderLinksEditor = (kind: ListKind, max: number, showNames: boolean) => (
     <div className="space-y-2">
-      {editState.links.map((link, i) => (
+      {editState[kind].map((link, i) => (
         <div key={i} className="flex items-center gap-2">
-          {max > 1 && (
+          {showNames && (
             <input
               type="text"
               value={link.name}
-              onChange={(e) => updateLink(i, 'name', e.target.value)}
-              placeholder={`ناو (لینکی ${i + 1})`}
+              onChange={(e) => updateRow(kind, i, 'name', e.target.value)}
+              placeholder={kind === 'streams' ? `ناو (لینکی ${i + 1})` : 'ناو (DAZN, beIN...)'}
               className="w-28 sm:w-40 shrink-0 bg-bg-600 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slatey-400"
             />
           )}
           <input
             type="text"
             value={link.url}
-            onChange={(e) => updateLink(i, 'url', e.target.value)}
-            placeholder="https://youtube.com/..."
+            onChange={(e) => updateRow(kind, i, 'url', e.target.value)}
+            placeholder={kind === 'streams' ? 'https://youtube.com/...' : 'https://...'}
             className="flex-1 min-w-0 bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
             dir="ltr"
           />
-          {max > 1 && (
+          {showNames && (
             <button
               type="button"
-              onClick={() => removeLink(i)}
+              onClick={() => removeRow(kind, i)}
               aria-label="Remove link"
               className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-bg-600 hover:bg-live-500/20 text-slatey-300 hover:text-live-400 transition-colors"
             >
@@ -224,10 +340,10 @@ export default function AdminPanel() {
           )}
         </div>
       ))}
-      {max > 1 && editState.links.length < max && (
+      {showNames && editState[kind].length < max && (
         <button
           type="button"
-          onClick={() => addLink(max)}
+          onClick={() => addRow(kind, max)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-xs text-slatey-300 hover:text-white transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -237,10 +353,20 @@ export default function AdminPanel() {
     </div>
   );
 
-  const goHome = () => {
-    window.location.href = '/';
+  const matchStatusBadge = (status: string) => {
+    if (status === 'live')
+      return <span className="px-2 py-0.5 rounded-full bg-live-500/15 text-live-400 text-[10px] font-bold">LIVE</span>;
+    if (status === 'finished')
+      return <span className="px-2 py-0.5 rounded-full bg-slatey-600/30 text-slatey-400 text-[10px] font-bold">FT</span>;
+    return <span className="px-2 py-0.5 rounded-full bg-accent-500/10 text-accent-400 text-[10px] font-bold">UPCOMING</span>;
   };
 
+  const chipClass = (active: boolean) =>
+    active
+      ? 'px-4 py-1.5 rounded-full text-xs font-bold bg-accent-500 whitespace-nowrap'
+      : 'px-4 py-1.5 rounded-full text-xs font-medium bg-bg-600 text-slatey-300 hover:bg-bg-500 hover:text-white transition-colors whitespace-nowrap';
+
+  // ---------- screens ----------
   if (checkingSession) {
     return (
       <div className="min-h-screen bg-bg-900 flex items-center justify-center">
@@ -315,25 +441,6 @@ export default function AdminPanel() {
     );
   }
 
-  let filtered = matches;
-  if (searchQuery.trim()) {
-    const q = searchQuery.trim();
-    filtered = matches.filter(
-      (m) =>
-        m.homeTeam.name.includes(q) ||
-        m.awayTeam.name.includes(q) ||
-        m.leagueName.includes(q)
-    );
-  }
-
-  const matchStatusBadge = (status: string) => {
-    if (status === 'live')
-      return <span className="px-2 py-0.5 rounded-full bg-live-500/15 text-live-400 text-[10px] font-bold">LIVE</span>;
-    if (status === 'finished')
-      return <span className="px-2 py-0.5 rounded-full bg-slatey-600/30 text-slatey-400 text-[10px] font-bold">FT</span>;
-    return <span className="px-2 py-0.5 rounded-full bg-accent-500/10 text-accent-400 text-[10px] font-bold">UPCOMING</span>;
-  };
-
   return (
     <div className="min-h-screen bg-bg-900">
       <div className="sticky top-0 z-50 bg-bg-800/95 backdrop-blur-md border-b border-white/5">
@@ -366,25 +473,51 @@ export default function AdminPanel() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h2 className="text-lg font-bold text-white mb-1">Stream Links Management</h2>
         <p className="text-xs text-slatey-400 mb-4">
-          Add YouTube Embed and Official Affiliate links for matches
+          Add stream links and official affiliate links for matches
         </p>
 
-        <div className="grid grid-cols-2 gap-3 mb-5">
+        {/* Statistics */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
           <div className="glass-card p-4 border border-accent-500/20 text-center">
-            <p className="text-xs text-slatey-400 mb-1">Total Website Visitors</p>
-            <p className="text-2xl font-bold text-accent-400">
-              {streamDataMap['__SITE_STATS__']?.click_count || 0}
-            </p>
+            <p className="text-xs text-slatey-400 mb-1">Visitors today</p>
+            <p className="text-2xl font-bold text-accent-400">{stats.today}</p>
+          </div>
+          <div className="glass-card p-4 border border-accent-500/20 text-center">
+            <p className="text-xs text-slatey-400 mb-1">Visitors, last 7 days</p>
+            <p className="text-2xl font-bold text-accent-400">{stats.week}</p>
           </div>
           <div className="glass-card p-4 border border-white/10 text-center">
-            <p className="text-xs text-slatey-400 mb-1">Total Link Clicks</p>
-            <p className="text-2xl font-bold text-white">
-              {Object.entries(streamDataMap)
-                .filter(([key]) => key !== '__SITE_STATS__' && key !== '__BEIN_NEWS__')
-                .reduce((sum, [, val]) => sum + (val.click_count || 0), 0)}
-            </p>
+            <p className="text-xs text-slatey-400 mb-1">Visitors, total</p>
+            <p className="text-2xl font-bold text-white">{stats.total}</p>
+          </div>
+          <div className="glass-card p-4 border border-white/10 text-center">
+            <p className="text-xs text-slatey-400 mb-1">Featured stream views</p>
+            <p className="text-2xl font-bold text-white">{stats.featuredViews}</p>
+          </div>
+          <div className="glass-card p-4 border border-white/10 text-center col-span-2 sm:col-span-1">
+            <p className="text-xs text-slatey-400 mb-1">Match link clicks</p>
+            <p className="text-2xl font-bold text-white">{stats.linkClicks}</p>
           </div>
         </div>
+
+        <div className="glass-card p-4 mb-2">
+          <div className="flex items-end justify-between gap-2" dir="ltr">
+            {stats.last7.map((d) => (
+              <div key={d.key} className="flex-1 flex flex-col items-center gap-1">
+                <span className="text-[10px] text-slatey-300">{d.n}</span>
+                <div
+                  className="w-full max-w-[36px] rounded-t bg-accent-500/70"
+                  style={{ height: `${Math.max(4, (d.n / stats.maxDay) * 48)}px` }}
+                />
+                <span className="text-[9px] text-slatey-400">{d.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <p className="text-[11px] text-slatey-400 mb-5">
+          A visitor is counted once per day (Baghdad time). The admin, bots and automated browsers are not counted.
+          Counting started when the new version went live.
+        </p>
 
         {(loadError || saveError) && (
           <div className="mb-4 flex items-start gap-2 text-xs text-live-400 bg-live-500/10 rounded-lg px-3 py-3">
@@ -401,11 +534,16 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* Featured stream */}
         <div className="glass-card p-4 mb-5 border border-live-500/30">
           <div className="flex items-center justify-between gap-3 mb-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2 py-0.5 rounded-full bg-live-500/15 text-live-400 text-[10px] font-bold">24/7 LIVE</span>
               <span className="text-sm font-bold text-white">Featured Stream</span>
+              <span className="flex items-center gap-1 text-[10px] text-slatey-400 bg-bg-600/50 rounded-full px-2 py-0.5">
+                <MousePointerClick className="w-3 h-3" />
+                Views: {stats.featuredViews}
+              </span>
             </div>
             {editingId !== '__BEIN_NEWS__' && (
               <button
@@ -418,7 +556,7 @@ export default function AdminPanel() {
           </div>
           {editingId === '__BEIN_NEWS__' && (
             <div className="space-y-2 pt-2">
-              {renderLinksEditor(1)}
+              {renderLinksEditor('streams', 1, false)}
               <div className="flex gap-2">
                 <button
                   onClick={() => handleSave('__BEIN_NEWS__')}
@@ -439,6 +577,29 @@ export default function AdminPanel() {
           )}
         </div>
 
+        {/* Day tabs */}
+        <div className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar">
+          {DAY_TABS.map((t) => (
+            <button key={t.id} onClick={() => setDayTab(t.id)} className={chipClass(dayTab === t.id)}>
+              {t.label} ({dayCounts[t.id]})
+            </button>
+          ))}
+        </div>
+
+        {/* League chips (only leagues that have matches on the selected day) */}
+        {leagueChips.length > 1 && (
+          <div className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar">
+            <button onClick={() => setLeagueFilter('all')} className={chipClass(activeLeague === 'all')}>
+              All leagues ({matchesForDay.length})
+            </button>
+            {leagueChips.map(([name, count]) => (
+              <button key={name} onClick={() => setLeagueFilter(name)} className={chipClass(activeLeague === name)}>
+                {name} ({count})
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="relative mb-4">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slatey-400" />
           <input
@@ -457,15 +618,18 @@ export default function AdminPanel() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="glass-card p-12 text-center">
-            <p className="text-slatey-400">No matches found</p>
+            <p className="text-slatey-400">
+              No matches {dayTab === 'all' ? '' : 'for this day'}.
+              {dayTab !== 'all' && ' Try another day above.'}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
             {filtered.map((match) => {
               const data = streamDataMap[match.id];
-              const hasYouTube = !!data?.stream_url && data.stream_url.length > 0;
-              const hasAffiliate = !!data?.affiliate_url && data.affiliate_url.length > 0;
-              const hasAny = hasYouTube || hasAffiliate;
+              const streamCount = data?.streams?.length || 0;
+              const affiliateList = data?.affiliates || [];
+              const hasAny = streamCount > 0 || affiliateList.length > 0;
               const clickCount = data?.click_count || 0;
               const isEditing = editingId === match.id;
               const justSaved = savedId === match.id;
@@ -480,6 +644,7 @@ export default function AdminPanel() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] text-slatey-400" dir="ltr">{match.kickoffTime}</span>
                       <span className="flex items-center gap-1 text-[10px] text-slatey-400 bg-bg-600/50 rounded-full px-2 py-0.5">
                         <MousePointerClick className="w-3 h-3" />
                         Clicks: {clickCount}
@@ -494,41 +659,21 @@ export default function AdminPanel() {
                   </div>
 
                   {isEditing ? (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <div>
                         <label className="flex items-center gap-1.5 text-xs text-slatey-400 mb-1.5">
                           <Youtube className="w-3.5 h-3.5 text-live-400" />
                           Stream links (first one opens by default)
                         </label>
-                        {renderLinksEditor(MAX_LINKS)}
+                        {renderLinksEditor('streams', MAX_LINKS, true)}
                       </div>
 
                       <div>
-                        <label className="block text-xs text-slatey-400 mb-1.5">
-                          Affiliate URL
+                        <label className="flex items-center gap-1.5 text-xs text-slatey-400 mb-1.5">
+                          <Link2 className="w-3.5 h-3.5 text-accent-400" />
+                          Affiliate links (each one becomes a watch button)
                         </label>
-                        <input
-                          type="text"
-                          value={editState.affiliateUrl}
-                          onChange={(e) => setEditState((s) => ({ ...s, affiliateUrl: e.target.value }))}
-                          placeholder="https://..."
-                          className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
-                          dir="ltr"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs text-slatey-400 mb-1.5">
-                          Platform Name
-                        </label>
-                        <input
-                          type="text"
-                          value={editState.platformName}
-                          onChange={(e) => setEditState((s) => ({ ...s, platformName: e.target.value }))}
-                          placeholder="DAZN, TurboVPN..."
-                          className="w-full bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
-                          dir="ltr"
-                        />
+                        {renderLinksEditor('affiliates', MAX_LINKS, true)}
                       </div>
 
                       <div className="flex gap-2 pt-1">
@@ -550,17 +695,17 @@ export default function AdminPanel() {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-2 pt-1">
-                      <div className="flex flex-wrap gap-2 text-xs text-slatey-400 truncate">
-                        {hasYouTube && (
+                      <div className="flex flex-wrap gap-2 text-xs text-slatey-400">
+                        {streamCount > 0 && (
                           <span className="bg-bg-600/60 px-2 py-1 rounded text-live-400">
-                            YouTube
+                            Stream ×{streamCount}
                           </span>
                         )}
-                        {hasAffiliate && (
-                          <span className="bg-bg-600/60 px-2 py-1 rounded text-accent-400">
-                            {data?.platform_name || 'Affiliate'}
+                        {affiliateList.map((a, i) => (
+                          <span key={`${a.url}-${i}`} className="bg-bg-600/60 px-2 py-1 rounded text-accent-400">
+                            {a.name || 'Affiliate'}
                           </span>
-                        )}
+                        ))}
                         {!hasAny && <span>No link set</span>}
                       </div>
                       <button
