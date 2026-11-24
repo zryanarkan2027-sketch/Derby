@@ -9,14 +9,6 @@ import MatchList from '@/components/MatchList';
 import ResultsTicker from '@/components/ResultsTicker';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
-import {
-  isSoundEnabled,
-  setSoundEnabled,
-  unlockAudio,
-  armAudioUnlock,
-  playChime,
-  playChampionsDayMusicOnce,
-} from '@/data/goalSound';
 import InfoPage, { SiteFooter, type InfoPageId } from '@/components/InfoPages';
 import { Loader2, AlertCircle, RefreshCw, Tv } from 'lucide-react';
 
@@ -61,25 +53,10 @@ function MainApp() {
     'https://youtube.com'
   );
 
-  // ---- Goal sound + goal toast ----
-  const [soundOn, setSoundOn] = useState<boolean>(() => isSoundEnabled());
+  // ---- Goal toast (silent) ----
   const [goalToast, setGoalToast] = useState<{ team: string; line: string } | null>(null);
   const prevScores = useRef<Map<string, { h: number; a: number }>>(new Map());
   const toastTimer = useRef<number | undefined>(undefined);
-
-  useEffect(() => {
-    armAudioUnlock();
-  }, []);
-
-  const toggleSound = () => {
-    const next = !soundOn;
-    setSoundOn(next);
-    setSoundEnabled(next);
-    if (next) {
-      unlockAudio();
-      playChime(); // soft confirmation sound
-    }
-  };
 
   useEffect(() => {
     const prev = prevScores.current;
@@ -106,18 +83,6 @@ function MainApp() {
     window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setGoalToast(null), 7000);
   }, [matches]);
-
-  // Champions League day: play the original fanfare once (after the visitor's first tap)
-  useEffect(() => {
-    if (!soundOn) return;
-    const now = new Date();
-    const clToday = matches.some(
-      (m) =>
-        /champions\s*league|چامپیۆنزلیگ/i.test(m.leagueName) &&
-        isTodayInBaghdad(m.kickoffDate, now)
-    );
-    if (clToday) playChampionsDayMusicOnce();
-  }, [matches, soundOn]);
 
   useEffect(() => {
     getStreamData('__BEIN_NEWS__')
@@ -229,8 +194,6 @@ function MainApp() {
           onNavigate={handleNavigate}
           onSearch={setSearchQuery}
           searchQuery={searchQuery}
-          soundOn={soundOn}
-          onToggleSound={toggleSound}
         />
         <MatchDetails match={selectedMatch} onBack={handleBack} />
         <SiteFooter />
@@ -268,8 +231,6 @@ function MainApp() {
         onNavigate={handleNavigate}
         onSearch={setSearchQuery}
         searchQuery={searchQuery}
-          soundOn={soundOn}
-          onToggleSound={toggleSound}
       />
 
       {/* Hero banner */}
