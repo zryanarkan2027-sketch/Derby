@@ -15,6 +15,8 @@ interface VideoPlayerProps {
   homeLogo?: ReactNode;
   awayLogo?: ReactNode;
   timeLabel?: string;
+  /** Called once when the visitor presses play (used to count views) */
+  onPlay?: () => void;
 }
 
 /** Turns YouTube watch/live/short links into embed links. Only http(s) is allowed. */
@@ -46,6 +48,7 @@ export default function VideoPlayer({
   homeLogo,
   awayLogo,
   timeLabel,
+  onPlay,
 }: VideoPlayerProps) {
   const links = useMemo(() => {
     const source: StreamLink[] =
@@ -147,7 +150,10 @@ export default function VideoPlayer({
 
               {hasStream ? (
                 <button
-                  onClick={() => setStarted(true)}
+                  onClick={() => {
+                    setStarted(true);
+                    onPlay?.();
+                  }}
                   className="group flex items-center gap-3 px-6 py-3 rounded-full bg-accent-500 hover:bg-accent-400 font-bold text-sm sm:text-base accent-glow transition-colors"
                 >
                   <Play className="w-5 h-5 fill-current" />
