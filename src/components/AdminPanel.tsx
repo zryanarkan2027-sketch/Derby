@@ -12,7 +12,7 @@ import { signIn, signOut, getAccessToken } from '@/data/adminAuth';
 import Logo from '@/components/Logo';
 import {
   Lock, Save, Search, Loader2, CheckCircle, ArrowRight,
-  AlertCircle, MousePointerClick, Youtube, LogOut, Plus, Trash2, Link2,
+  AlertCircle, MousePointerClick, Youtube, LogOut, Plus, Trash2, Link2, Eye,
 } from 'lucide-react';
 
 interface LinkRow {
@@ -203,6 +203,7 @@ export default function AdminPanel() {
           platform_name: affiliates[0]?.name ?? '',
           affiliates,
           click_count: prev[matchId]?.click_count || 0,
+          views: prev[matchId]?.views || 0,
         },
       }));
       setEditingId(null);
@@ -229,11 +230,13 @@ export default function AdminPanel() {
 
     const visitorsByDay = new Map<string, number>();
     let linkClicks = 0;
+    let streamViews = 0;
     for (const [id, data] of Object.entries(streamDataMap)) {
       if (id.startsWith('__DAY_')) {
         visitorsByDay.set(id.slice(6, -2), data.click_count || 0);
       } else if (!id.startsWith('__')) {
         linkClicks += data.click_count || 0;
+        streamViews += data.views || 0;
       }
     }
 
@@ -252,6 +255,7 @@ export default function AdminPanel() {
       last7,
       maxDay: Math.max(1, ...last7.map((d) => d.n)),
       linkClicks,
+      streamViews,
       featuredViews: streamDataMap['__BEIN_NEWS__']?.click_count || 0,
     };
   }, [streamDataMap]);
@@ -477,7 +481,7 @@ export default function AdminPanel() {
         </p>
 
         {/* Statistics */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
           <div className="glass-card p-4 border border-accent-500/20 text-center">
             <p className="text-xs text-slatey-400 mb-1">Visitors today</p>
             <p className="text-2xl font-bold text-accent-400">{stats.today}</p>
@@ -494,8 +498,12 @@ export default function AdminPanel() {
             <p className="text-xs text-slatey-400 mb-1">Featured stream views</p>
             <p className="text-2xl font-bold text-white">{stats.featuredViews}</p>
           </div>
-          <div className="glass-card p-4 border border-white/10 text-center col-span-2 sm:col-span-1">
-            <p className="text-xs text-slatey-400 mb-1">Match link clicks</p>
+          <div className="glass-card p-4 border border-white/10 text-center">
+            <p className="text-xs text-slatey-400 mb-1">Match stream views</p>
+            <p className="text-2xl font-bold text-white">{stats.streamViews}</p>
+          </div>
+          <div className="glass-card p-4 border border-white/10 text-center">
+            <p className="text-xs text-slatey-400 mb-1">Affiliate button clicks</p>
             <p className="text-2xl font-bold text-white">{stats.linkClicks}</p>
           </div>
         </div>
@@ -646,8 +654,12 @@ export default function AdminPanel() {
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-[10px] text-slatey-400" dir="ltr">{match.kickoffTime}</span>
                       <span className="flex items-center gap-1 text-[10px] text-slatey-400 bg-bg-600/50 rounded-full px-2 py-0.5">
+                        <Eye className="w-3 h-3" />
+                        Views: {data?.views || 0}
+                      </span>
+                      <span className="flex items-center gap-1 text-[10px] text-slatey-400 bg-bg-600/50 rounded-full px-2 py-0.5">
                         <MousePointerClick className="w-3 h-3" />
-                        Clicks: {clickCount}
+                        Link clicks: {clickCount}
                       </span>
                       {hasAny && !isEditing && (
                         <span className="flex items-center gap-1 text-[10px] text-accent-400">
