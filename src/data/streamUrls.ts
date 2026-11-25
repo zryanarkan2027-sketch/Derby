@@ -25,6 +25,7 @@ interface StreamRow {
   click_count: number | null;
   streams?: unknown;
   affiliates?: unknown;
+  views?: number | null;
 }
 
 export interface StreamData {
@@ -34,6 +35,8 @@ export interface StreamData {
   click_count: number;
   streams: StreamLink[];
   affiliates: StreamLink[];
+  /** how many people pressed play on this match */
+  views: number;
 }
 
 function parseLinks(raw: unknown): StreamLink[] {
@@ -126,13 +129,19 @@ function cleanRow(row: StreamRow): StreamData {
     click_count: row.click_count || 0,
     streams,
     affiliates,
+    views: row.views || 0,
   };
 }
 
 /** Reads rows. If a newer column does not exist yet it falls back to the older column sets. */
 async function fetchRows(filter: string): Promise<StreamRow[]> {
   const base = 'match_id,stream_url,affiliate_url,platform_name,click_count';
-  const variants = [`${base},streams,affiliates`, `${base},streams`, base];
+  const variants = [
+    `${base},streams,affiliates,views`,
+    `${base},streams,affiliates`,
+    `${base},streams`,
+    base,
+  ];
   let lastErr: unknown;
   for (const cols of variants) {
     try {
@@ -211,8 +220,17 @@ export async function setStreamData(
 }
 
 // Public counters go through SQL functions, so visitors never get direct write access.
+function isAdminBrowser(): boolean {
+  try {
+    return !!localStorage.getItem('derby_admin_session');
+  } catch {
+    return false;
+  }
+}
+
 export async function incrementClickCount(matchId: string): Promise<void> {
   try {
+    if (isAdminBrowser()) return; // the admin's own tests are not counted
     await supabaseFetch('/rpc/bump_click', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -251,5 +269,22 @@ export async function recordSiteVisit(): Promise<void> {
     localStorage.setItem('derby_visit_day', today);
   } catch (err) {
     console.error('Failed to record visit:', err);
+  }
+}
+
+/** Counts one "play" for a match stream (once per match per browser session; not the admin). */
+export async function incrementViewCount(matchId: string): Promise<void> {
+  try {
+    if (isAdminBrowser()) return;
+    const key = `derby_viewed_${matchId}`;
+    if (sessionStorage.getItem(key)) return;
+    await supabaseFetch('/rpc/bump_view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_match_id: matchId }),
+    });
+    sessionStorage.setItem(key, '1');
+  } catch (err) {
+    console.error('Failed to count view:', err);
   }
 }
