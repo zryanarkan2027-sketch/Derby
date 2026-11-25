@@ -4,7 +4,7 @@ import type { Match } from '@/data/matches';
 import type { StreamLink } from '@/data/streamUrls';
 import TeamLogo from './TeamLogo';
 import VideoPlayer from './VideoPlayer';
-import { incrementClickCount } from '@/data/streamUrls';
+import { incrementClickCount, incrementViewCount } from '@/data/streamUrls';
 import LineupsTab from './tabs/LineupsTab';
 import StatsTab from './tabs/StatsTab';
 import MatchInfoTab from './tabs/MatchInfoTab';
@@ -126,6 +126,7 @@ export default function MatchDetails({ match, onBack }: MatchDetailsProps) {
       {/* Video Player (several links, click-to-play) */}
       <VideoPlayer
         key={match.id}
+        onPlay={() => incrementViewCount(match.id)}
         streamUrl={match.streamUrl}
         streams={match.streams}
         matchTitle={`${match.homeTeam.name} vs ${match.awayTeam.name}`}
