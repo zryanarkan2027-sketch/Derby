@@ -10,6 +10,12 @@ import ResultsTicker from '@/components/ResultsTicker';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
 import FeaturedStream from '@/components/FeaturedStream';
+import {
+  leaguePageById,
+  leaguePageByPath,
+  applyHead,
+  type LeaguePage,
+} from '@/data/leaguePages';
 import InfoPage, { SiteFooter, type InfoPageId } from '@/components/InfoPages';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
@@ -30,19 +36,19 @@ export default function App() {
   if (infoPage) {
     return <InfoPage page={infoPage} />;
   }
-  return <MainApp />;
+  return <MainApp leaguePage={leaguePageByPath(path)} />;
 }
 
 type Page = 'home' | 'leagues' | 'live';
 
-function MainApp() {
+function MainApp({ leaguePage }: { leaguePage?: LeaguePage }) {
   const [page, setPage] = useState<Page>('home');
   useEffect(() => {
     recordSiteVisit();
   }, []);
 
   const [filterTab, setFilterTab] = useState<FilterTab>('today');
-  const [leagueFilter, setLeagueFilter] = useState<LeagueFilter>('all');
+  const [leagueFilter, setLeagueFilter] = useState<LeagueFilter>(leaguePage?.id ?? 'all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<(Match & { streams?: StreamLink[]; affiliates?: StreamLink[] }) | null>(null);
 
@@ -116,6 +122,31 @@ function MainApp() {
     return () => clearInterval(interval);
   }, [loadMatches]);
 
+  // Switching league also changes the URL (/premier-league ...) and the page title,
+  // so every league has its own address that search engines can index.
+  const handleLeagueChange = (id: LeagueFilter) => {
+    setLeagueFilter(id);
+    setSelectedMatch(null);
+    const page = leaguePageById(id);
+    const target = page ? `/${page.slug}` : '/';
+    if (window.location.pathname.replace(/\/+$/, '') !== target.replace(/\/+$/, '')) {
+      window.history.pushState({}, '', target);
+    }
+    applyHead(page);
+  };
+
+  useEffect(() => {
+    applyHead(leaguePage);
+    const onPop = () => {
+      const p = leaguePageByPath(window.location.pathname);
+      setLeagueFilter(p ? p.id : 'all');
+      setSelectedMatch(null);
+      applyHead(p);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [leaguePage]);
+
   const handleNavigate = (target: Page) => {
     setPage(target);
     setSelectedMatch(null);
@@ -123,6 +154,7 @@ function MainApp() {
       setFilterTab('live');
     } else if (target === 'home') {
       setFilterTab('today');
+      handleLeagueChange('all');
     }
   };
 
@@ -162,6 +194,8 @@ function MainApp() {
     const finished = matches.filter((m) => m.status === 'finished').length;
     return { today, live, upcoming, finished };
   }, [matches]);
+
+  const currentPage = leaguePageById(leagueFilter);
 
   if (selectedMatch) {
     return (
@@ -250,10 +284,12 @@ function MainApp() {
             </span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-bold text-white mb-2">
-            ئەنجامی ڕاستەوخۆ و پەخشی فەرمی
+            {currentPage ? currentPage.h1 : 'یاری ڕاستەوخۆ و ئەنجامی یارییەکان'}
           </h1>
           <p className="text-slatey-400 text-sm sm:text-base">
-            هەموو یارییەکان لە یەک شوێندا — خولە جیاوازەکان، ئامار، و پێکهاتە
+            {currentPage
+              ? 'یارییەکانی ئەمڕۆ و سبەی، ئەنجامی ڕاستەوخۆ، و پەخشی فەرمی'
+              : 'هەموو یارییەکان لە یەک شوێندا — خولە جیاوازەکان، ئامار، و پێکهاتە'}
           </p>
           {usingFallback && !loading && (
             <div className="mt-3 flex items-center gap-2 text-xs text-warning-400 bg-warning-500/10 rounded-lg px-3 py-2 inline-flex">
@@ -281,7 +317,7 @@ function MainApp() {
 
         {/* League filter */}
         <div className="mt-4">
-          <LeagueFilterBar active={leagueFilter} onChange={setLeagueFilter} />
+          <LeagueFilterBar active={leagueFilter} onChange={handleLeagueChange} />
         </div>
 
         {/* Loading state */}
@@ -317,6 +353,23 @@ function MainApp() {
               />
             </div>
           </>
+        )}
+
+        {currentPage && (
+          <section className="glass-card p-5 sm:p-6 mt-10">
+            <h2 className="text-lg font-bold text-white mb-2">{currentPage.h1}: ئەنجام و یارییەکان</h2>
+            <p className="text-sm leading-7 text-slatey-300">{currentPage.intro}</p>
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                handleLeagueChange('all');
+              }}
+              className="inline-block mt-3 text-sm text-accent-400 hover:text-accent-300 underline"
+            >
+              بینینی هەموو یارییەکان
+            </a>
+          </section>
         )}
       </main>
 
