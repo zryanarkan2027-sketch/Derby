@@ -9,7 +9,8 @@ import MatchList from '@/components/MatchList';
 import ResultsTicker from '@/components/ResultsTicker';
 import MatchDetails from '@/components/MatchDetails';
 import AdminPanel from '@/components/AdminPanel';
-import FeaturedStream from '@/components/FeaturedStream';
+import FeaturedStreams, { type FeaturedItem } from '@/components/FeaturedStream';
+import { FEATURED_SLOTS, cleanChannelName } from '@/data/featured';
 import {
   leaguePageById,
   leaguePageByPath,
@@ -56,7 +57,7 @@ function MainApp({ leaguePage }: { leaguePage?: LeaguePage }) {
   const [loading, setLoading] = useState(true);
   const [usingFallback, setUsingFallback] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [beinNewsUrl, setBeinNewsUrl] = useState<string | null>(null);
+  const [featured, setFeatured] = useState<FeaturedItem[] | null>(null);
 
   // ---- Goal toast (silent) ----
   const [goalToast, setGoalToast] = useState<{ team: string; line: string } | null>(null);
@@ -90,13 +91,27 @@ function MainApp({ leaguePage }: { leaguePage?: LeaguePage }) {
   }, [matches]);
 
   useEffect(() => {
-    getStreamData('__BEIN_NEWS__')
-      .then((data) => {
-        if (data?.stream_url) {
-          setBeinNewsUrl(data.stream_url);
+    let cancelled = false;
+    Promise.all(
+      FEATURED_SLOTS.map(async (slot): Promise<FeaturedItem> => {
+        try {
+          const data = await getStreamData(slot.id);
+          const first = data?.streams?.[0];
+          return {
+            id: slot.id,
+            title: cleanChannelName(first?.name) || slot.fallbackTitle,
+            url: first?.url || data?.stream_url || '',
+          };
+        } catch {
+          return { id: slot.id, title: slot.fallbackTitle, url: '' };
         }
       })
-      .catch(() => {});
+    ).then((list) => {
+      if (!cancelled) setFeatured(list);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const loadMatches = useCallback(async () => {
@@ -305,8 +320,8 @@ function MainApp({ leaguePage }: { leaguePage?: LeaguePage }) {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* 24/7 featured stream (loads after the visitor taps play) */}
-        <FeaturedStream url={beinNewsUrl} />
+        {/* Featured channels (each loads after the visitor taps play) */}
+        <FeaturedStreams items={featured} />
 
         {/* Filter tabs */}
         <FilterTabs
