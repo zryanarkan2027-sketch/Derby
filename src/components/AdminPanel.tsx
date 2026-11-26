@@ -10,6 +10,7 @@ import {
 } from '@/data/streamUrls';
 import { signIn, signOut, getAccessToken } from '@/data/adminAuth';
 import Logo from '@/components/Logo';
+import { FEATURED_SLOTS, isFeaturedId, cleanChannelName } from '@/data/featured';
 import {
   Lock, Save, Search, Loader2, CheckCircle, ArrowRight,
   AlertCircle, MousePointerClick, Youtube, LogOut, Plus, Trash2, Link2, Eye,
@@ -151,9 +152,13 @@ export default function AdminPanel() {
 
   const startEdit = (matchId: string) => {
     const existing = streamDataMap[matchId];
+    const featuredSlot = isFeaturedId(matchId);
     const streams: LinkRow[] =
       existing?.streams && existing.streams.length > 0
-        ? existing.streams.map((s) => ({ name: s.name, url: s.url }))
+        ? existing.streams.map((s) => ({
+            name: featuredSlot ? cleanChannelName(s.name) : s.name,
+            url: s.url,
+          }))
         : [{ ...EMPTY_LINK }];
     const affiliates: LinkRow[] =
       existing?.affiliates && existing.affiliates.length > 0
@@ -172,12 +177,12 @@ export default function AdminPanel() {
     setSaving(true);
     setSaveError(null);
 
-    const isFeatured = matchId === '__BEIN_NEWS__';
+    const isFeatured = isFeaturedId(matchId);
 
     const streams = editState.streams
       .map((l) => ({ name: l.name.trim(), url: convertToEmbedUrl(l.url) }))
       .filter((l) => l.url.length > 0)
-      .map((l, i) => ({ name: l.name || `لینکی ${i + 1}`, url: l.url }));
+      .map((l, i) => ({ name: l.name || (isFeatured ? '' : `لینکی ${i + 1}`), url: l.url }));
 
     const affiliates = isFeatured
       ? []
@@ -256,7 +261,10 @@ export default function AdminPanel() {
       maxDay: Math.max(1, ...last7.map((d) => d.n)),
       linkClicks,
       streamViews,
-      featuredViews: streamDataMap['__BEIN_NEWS__']?.click_count || 0,
+      featuredViews: FEATURED_SLOTS.reduce(
+        (sum, slot) => sum + (streamDataMap[slot.id]?.click_count || 0),
+        0
+      ),
     };
   }, [streamDataMap]);
 
@@ -311,7 +319,8 @@ export default function AdminPanel() {
   }, [matchesForDay, activeLeague, searchQuery]);
 
   // ---------- small UI helpers ----------
-  const renderLinksEditor = (kind: ListKind, max: number, showNames: boolean) => (
+  // showNames: show the name field. allowMulti: show add / remove buttons.
+  const renderLinksEditor = (kind: ListKind, max: number, showNames: boolean, allowMulti: boolean) => (
     <div className="space-y-2">
       {editState[kind].map((link, i) => (
         <div key={i} className="flex items-center gap-2">
@@ -320,8 +329,16 @@ export default function AdminPanel() {
               type="text"
               value={link.name}
               onChange={(e) => updateRow(kind, i, 'name', e.target.value)}
-              placeholder={kind === 'streams' ? `ناو (لینکی ${i + 1})` : 'ناو (DAZN, beIN...)'}
-              className="w-28 sm:w-40 shrink-0 bg-bg-600 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slatey-400"
+              placeholder={
+                kind === 'streams'
+                  ? allowMulti
+                    ? `ناو (لینکی ${i + 1})`
+                    : 'Channel name (e.g. Real Madrid TV)'
+                  : 'ناو (DAZN, beIN...)'
+              }
+              className={`${
+                allowMulti ? 'w-28 sm:w-40' : 'w-40 sm:w-56'
+              } shrink-0 bg-bg-600 border border-white/5 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slatey-400`}
             />
           )}
           <input
@@ -332,7 +349,7 @@ export default function AdminPanel() {
             className="flex-1 min-w-0 bg-bg-600 border border-white/5 rounded-lg px-4 py-2 text-sm text-white"
             dir="ltr"
           />
-          {showNames && (
+          {allowMulti && (
             <button
               type="button"
               onClick={() => removeRow(kind, i)}
@@ -344,7 +361,7 @@ export default function AdminPanel() {
           )}
         </div>
       ))}
-      {showNames && editState[kind].length < max && (
+      {allowMulti && editState[kind].length < max && (
         <button
           type="button"
           onClick={() => addRow(kind, max)}
@@ -542,47 +559,60 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* Featured stream */}
-        <div className="glass-card p-4 mb-5 border border-live-500/30">
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2 py-0.5 rounded-full bg-live-500/15 text-live-400 text-[10px] font-bold">24/7 LIVE</span>
-              <span className="text-sm font-bold text-white">Featured Stream</span>
-              <span className="flex items-center gap-1 text-[10px] text-slatey-400 bg-bg-600/50 rounded-full px-2 py-0.5">
-                <MousePointerClick className="w-3 h-3" />
-                Views: {stats.featuredViews}
-              </span>
-            </div>
-            {editingId !== '__BEIN_NEWS__' && (
-              <button
-                onClick={() => startEdit('__BEIN_NEWS__')}
-                className="px-3 py-1.5 rounded-lg bg-accent-500 hover:bg-accent-600 text-xs text-white font-medium shrink-0"
-              >
-                {savedId === '__BEIN_NEWS__' ? 'Saved' : 'Update Link'}
-              </button>
-            )}
-          </div>
-          {editingId === '__BEIN_NEWS__' && (
-            <div className="space-y-2 pt-2">
-              {renderLinksEditor('streams', 1, false)}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleSave('__BEIN_NEWS__')}
-                  disabled={saving}
-                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-xs font-medium"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  Save
-                </button>
-                <button
-                  onClick={cancelEdit}
-                  className="px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-slatey-300 text-xs"
-                >
-                  Cancel
-                </button>
+        {/* Featured channels (shown at the top of the home page) */}
+        <div className="space-y-3 mb-5">
+          {FEATURED_SLOTS.map((slot, idx) => {
+            const d = streamDataMap[slot.id];
+            const channelName = cleanChannelName(d?.streams?.[0]?.name) || slot.fallbackTitle;
+            const hasLink = !!(d?.streams?.[0]?.url || d?.stream_url);
+            const editingThis = editingId === slot.id;
+            return (
+              <div key={slot.id} className="glass-card p-4 border border-live-500/30">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <span className="px-2 py-0.5 rounded-full bg-live-500/15 text-live-400 text-[10px] font-bold">
+                      FEATURED {idx + 1}
+                    </span>
+                    <span className="text-sm font-bold text-white truncate" dir="auto">{channelName}</span>
+                    <span className="flex items-center gap-1 text-[10px] text-slatey-400 bg-bg-600/50 rounded-full px-2 py-0.5">
+                      <Eye className="w-3 h-3" />
+                      Views: {d?.click_count || 0}
+                    </span>
+                    {!hasLink && <span className="text-[10px] text-slatey-400">No link set</span>}
+                  </div>
+                  {!editingThis && (
+                    <button
+                      onClick={() => startEdit(slot.id)}
+                      className="px-3 py-1.5 rounded-lg bg-accent-500 hover:bg-accent-600 text-xs text-white font-medium shrink-0"
+                    >
+                      {savedId === slot.id ? 'Saved' : hasLink ? 'Update Link' : 'Add Link'}
+                    </button>
+                  )}
+                </div>
+                {editingThis && (
+                  <div className="space-y-2 pt-2">
+                    {renderLinksEditor('streams', 1, true, false)}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleSave(slot.id)}
+                        disabled={saving}
+                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-xs font-medium"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        Save
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="px-3 py-1.5 rounded-lg bg-bg-600 hover:bg-bg-500 text-slatey-300 text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })}
         </div>
 
         {/* Day tabs */}
@@ -677,7 +707,7 @@ export default function AdminPanel() {
                           <Youtube className="w-3.5 h-3.5 text-live-400" />
                           Stream links (first one opens by default)
                         </label>
-                        {renderLinksEditor('streams', MAX_LINKS, true)}
+                        {renderLinksEditor('streams', MAX_LINKS, true, true)}
                       </div>
 
                       <div>
@@ -685,7 +715,7 @@ export default function AdminPanel() {
                           <Link2 className="w-3.5 h-3.5 text-accent-400" />
                           Affiliate links (each one becomes a watch button)
                         </label>
-                        {renderLinksEditor('affiliates', MAX_LINKS, true)}
+                        {renderLinksEditor('affiliates', MAX_LINKS, true, true)}
                       </div>
 
                       <div className="flex gap-2 pt-1">
