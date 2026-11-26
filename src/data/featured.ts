@@ -12,7 +12,7 @@ export interface FeaturedSlot {
 export const FEATURED_SLOTS: FeaturedSlot[] = [
   { id: '__BEIN_NEWS__', fallbackTitle: 'پەخشی ڕاستەوخۆ' },
   { id: '__FEATURED_2__', fallbackTitle: 'پەخشی ڕاستەوخۆ' },
-  { id: '__FEATURED_3__', fallbackTitle: 'پەخشی ڕاستەوخۆ' })،
+  { id: '__FEATURED_3__', fallbackTitle: 'پەخشی ڕاستەوخۆ' },
 ];
 
 export function isFeaturedId(id: string): boolean {
