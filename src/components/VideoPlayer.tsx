@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import Hls from 'hls.js';
 import type { StreamLink } from '@/data/streamUrls';
 import { ShieldCheck, Radio, Play, RefreshCw } from 'lucide-react';
 
@@ -29,7 +30,7 @@ function normalizeUrl(raw?: string): string | null {
     /(?:youtube\.com\/(?:watch\?v=|live\/|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
   );
   if (yt && yt[1]) {
-    return `https://www.youtube.com/embed/${yt[1]}?rel=0`;
+    return `https://youtube.com{yt[1]}?rel=0`;
   }
   return url;
 }
@@ -37,6 +38,58 @@ function normalizeUrl(raw?: string): string | null {
 function withAutoplay(url: string): string {
   if (!/youtube\.com\/embed\//.test(url)) return url;
   return url.includes('?') ? `${url}&autoplay=1` : `${url}?autoplay=1`;
+}
+
+function isHlsStream(url: string): boolean {
+  return /\.m3u8(\?|$)/i.test(url);
+}
+
+function HlsVideoPlayer({ src, title }: { src: string; title: string }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let hls: Hls | null = null;
+
+    if (Hls.isSupported()) {
+      hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+      });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => {
+          // Autoplay might be blocked by browser policy until user interacts
+        });
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Safari native HLS support
+      video.src = src;
+      video.addEventListener('loadedmetadata', () => {
+        video.play().catch(() => {});
+      });
+    }
+
+    return () => {
+      if (hls) {
+        hls.destroy();
+      }
+    };
+  }, [src]);
+
+  return (
+    <video
+      ref={videoRef}
+      title={title}
+      className="absolute inset-0 w-full h-full bg-black"
+      controls
+      autoPlay
+      playsInline
+    />
+  );
 }
 
 export default function VideoPlayer({
@@ -93,16 +146,24 @@ export default function VideoPlayer({
         style={{ aspectRatio: '16/9' }}
       >
         {hasStream && current && started ? (
-          <iframe
-            key={`${active}-${reloadKey}`}
-            src={withAutoplay(current.url)}
-            title={`${matchTitle} - ${current.name}`}
-            className="absolute inset-0 w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            allowFullScreen
-            referrerPolicy="strict-origin-when-cross-origin"
-            style={{ border: 0 }}
-          />
+          isHlsStream(current.url) ? (
+            <HlsVideoPlayer
+              key={`${active}-${reloadKey}`}
+              src={current.url}
+              title={`${matchTitle} - ${current.name}`}
+            />
+          ) : (
+            <iframe
+              key={`${active}-${reloadKey}`}
+              src={withAutoplay(current.url)}
+              title={`${matchTitle} - ${current.name}`}
+              className="absolute inset-0 w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+              style={{ border: 0 }}
+            />
+          )
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden bg-gradient-to-br from-bg-800 via-bg-900 to-bg-900">
             {/* Pitch lines */}
@@ -210,9 +271,9 @@ export default function VideoPlayer({
       {hasStream && started && (
         <p className="mt-2 text-[11px] text-slatey-400">
           ئەگەر پەخشەکە وەستا، تازەی بکەرەوە
-          {links.length > 1 ? ' یان لینکێکی تر هەڵبژێرە.' : '.'}
-        </p>
-      )}
-    </div>
-  );
+{links.length > 1 ? ' یان لینکێکی تر هەڵبژێرە.' : '.'}
+
+)}
+
+);
 }
