@@ -66,7 +66,6 @@ function HlsVideoPlayer({ src, title }: { src: string; title: string }) {
         });
       });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Safari native HLS support
       video.src = src;
       video.addEventListener('loadedmetadata', () => {
         video.play().catch(() => {});
@@ -171,7 +170,7 @@ export default function VideoPlayer({
               className="absolute inset-0 w-full h-full opacity-[0.07] pointer-events-none"
               viewBox="0 0 800 450"
               fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+              xmlns="http://w3.org"
               preserveAspectRatio="xMidYMid slice"
             >
               <rect x="30" y="25" width="740" height="400" rx="8" stroke="#C6F432" strokeWidth="3" />
@@ -271,9 +270,8 @@ export default function VideoPlayer({
       {hasStream && started && (
         <p className="mt-2 text-[11px] text-slatey-400">
           ئەگەر پەخشەکە وەستا، تازەی بکەرەوە
-{links.length > 1 ? ' یان لینکێکی تر هەڵبژێرە.' : '.'}
-
-)}
-
+          {links.length > 1 ? ' یان لینکێکی تر هەڵبژێرە.' : '.'}
+        </p>
+      )}
 );
 }
