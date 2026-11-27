@@ -4,23 +4,17 @@ import type { StreamLink } from '@/data/streamUrls';
 import { ShieldCheck, Radio, Play, RefreshCw } from 'lucide-react';
 
 interface VideoPlayerProps {
-  /** Old single-link prop (still supported) */
   streamUrl?: string;
-  /** New: several links for one match */
   streams?: StreamLink[];
   matchTitle: string;
-  /** Optional, used for the poster before playing */
   homeName?: string;
   awayName?: string;
-  /** Any element, e.g. <TeamLogo ... /> */
   homeLogo?: ReactNode;
   awayLogo?: ReactNode;
   timeLabel?: string;
-  /** Called once when the visitor presses play (used to count views) */
   onPlay?: () => void;
 }
 
-/** Turns YouTube watch/live/short links into embed links. Only http(s) is allowed. */
 function normalizeUrl(raw?: string): string | null {
   const url = (raw || '').trim();
   if (!url) return null;
@@ -61,9 +55,7 @@ function HlsVideoPlayer({ src, title }: { src: string; title: string }) {
       hls.loadSource(src);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {
-          // Autoplay might be blocked by browser policy until user interacts
-        });
+        video.play().catch(() => {});
       });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src;
@@ -123,7 +115,6 @@ export default function VideoPlayer({
 
   return (
     <div className="mb-3">
-      {/* Header row */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-accent-400" />
@@ -139,7 +130,6 @@ export default function VideoPlayer({
         )}
       </div>
 
-      {/* 16:9 player */}
       <div
         className="relative w-full overflow-hidden rounded-xl border border-white/10 bg-bg-900 shadow-2xl"
         style={{ aspectRatio: '16/9' }}
@@ -165,7 +155,6 @@ export default function VideoPlayer({
           )
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden bg-gradient-to-br from-bg-800 via-bg-900 to-bg-900">
-            {/* Pitch lines */}
             <svg
               className="absolute inset-0 w-full h-full opacity-[0.07] pointer-events-none"
               viewBox="0 0 800 450"
@@ -182,7 +171,6 @@ export default function VideoPlayer({
             </svg>
 
             <div className="relative z-10 flex flex-col items-center text-center gap-3 sm:gap-4 w-full max-w-lg">
-              {/* Teams */}
               {homeName && awayName ? (
                 <div className="flex items-center justify-center gap-4 sm:gap-8 w-full">
                   <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
@@ -234,7 +222,6 @@ export default function VideoPlayer({
         )}
       </div>
 
-      {/* Link picker + refresh */}
       {hasStream && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {links.length > 1 &&
@@ -273,5 +260,6 @@ export default function VideoPlayer({
           {links.length > 1 ? ' یان لینکێکی تر هەڵبژێرە.' : '.'}
         </p>
       )}
-);
+    </div>
+  );
 }
